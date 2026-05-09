@@ -1,0 +1,39 @@
+[project]
+name = "verification-games"
+version = "0.1.0"
+description = "Forward modelling for PARIS verification games 2026."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Brendan Murphy" }]
+dependencies = [
+  "numpy>=2.0",
+  "pandas<3.0",
+  "xarray>=2025.6.0",
+  "matplotlib",
+  "scipy",
+  "dask[distributed]",
+  "distributed",
+  "dask-jobqueue",
+  "openghg",
+  "openghg_inversions",
+]
+
+[project.optional-dependencies]
+jupyter = [
+  "jupyterlab",
+  "ipykernel",
+  "jupyter-server-proxy",
+  "dask-labextension",
+]
+dev = [
+  "pytest",
+  "ruff",
+]
+notebook = [
+  "jupytext",
+  "nbdime",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
