@@ -173,12 +173,12 @@ def _flux_data_array(ds: xr.Dataset, sector: str) -> xr.DataArray:
     if data.dims == expected_dims:
         return data
 
-    expected_shape = tuple(ds.sizes[dim] for dim in expected_dims if dim in ds.sizes)
+    expected_shape = tuple(_coord_or_dim_size(ds, dim) for dim in expected_dims)
     if data.ndim == FLUX_NDIMS and data.shape == expected_shape:
         return xr.DataArray(
             data.data,
             dims=expected_dims,
-            coords={dim: ds.coords[dim] for dim in expected_dims if dim in ds.coords},
+            coords={dim: (dim, ds.coords[dim].data) for dim in expected_dims if dim in ds.coords},
             attrs=dict(data.attrs),
             name=data.name,
         )
@@ -187,6 +187,12 @@ def _flux_data_array(ds: xr.Dataset, sector: str) -> xr.DataArray:
         f"Flux variable {sector!r} has unexpected dims/shape: "
         f"dims={data.dims!r}, shape={data.shape!r}; expected {expected_dims} / {expected_shape}."
     )
+
+
+def _coord_or_dim_size(ds: xr.Dataset, dim: str) -> int:
+    if dim in ds.coords:
+        return int(ds.coords[dim].size)
+    return int(ds.sizes[dim])
 
 
 def stack_flux_sources(
