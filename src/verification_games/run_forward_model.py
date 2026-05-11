@@ -57,6 +57,7 @@ AVAILABLE_SHARED_STORE_SITES = tuple(site for site in SITE_LIST if site != "PUY"
 FP_X_FLUX_UNITS = "1"
 EXPECTED_FLUX_UNITS = "mol m-2 s-1"
 EXPECTED_FOOTPRINT_UNITS = "m2 s mol-1"
+SPATIAL_COORD_TOLERANCE = 1e-5
 DEFAULT_ZARR_COMPRESSOR = Blosc(cname="lz4", clevel=5, shuffle=Blosc.SHUFFLE)
 FP_X_FLUX_MODIFICATIONS = (
     "Computed footprint times staged flux and summed over latitude and longitude; "
@@ -190,7 +191,12 @@ def _flux_slice_for_footprint(flux: xr.DataArray, fp: xr.Dataset) -> xr.DataArra
     return flux.sel(time=slice(start, end))
 
 
-def _coordinate_values_match(left: xr.DataArray, right: xr.DataArray) -> bool:
+def _coordinate_values_match(
+    left: xr.DataArray,
+    right: xr.DataArray,
+    *,
+    tolerance: float = SPATIAL_COORD_TOLERANCE,
+) -> bool:
     """Return whether two 1D coordinates have the same values for alignment."""
     if left.shape != right.shape:
         return False
@@ -198,7 +204,7 @@ def _coordinate_values_match(left: xr.DataArray, right: xr.DataArray) -> bool:
     left_values = left.values
     right_values = right.values
     if np.issubdtype(left_values.dtype, np.number) and np.issubdtype(right_values.dtype, np.number):
-        return bool(np.allclose(left_values, right_values, rtol=1e-6, atol=1e-6, equal_nan=True))
+        return bool(np.allclose(left_values, right_values, rtol=0.0, atol=tolerance, equal_nan=True))
     return bool(np.array_equal(left_values, right_values))
 
 

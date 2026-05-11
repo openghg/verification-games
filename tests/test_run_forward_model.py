@@ -90,8 +90,8 @@ def test_harmonize_spatial_coords_accepts_same_grid_float_noise() -> None:
         np.zeros((2, 2), dtype=np.float32),
         dims=("lat", "lon"),
         coords={
-            "lat": np.array([50.0, 51.0000005], dtype=np.float32),
-            "lon": np.array([-2.0, -1.0000005], dtype=np.float32),
+            "lat": np.array([50.0, 51.000005], dtype=np.float32),
+            "lon": np.array([-2.0, -1.000005], dtype=np.float32),
         },
     )
 

@@ -371,6 +371,132 @@ if RUN_FULL_NAN_CHECK:
 #+end_src
 
 
+** Alignment debug
+:PROPERTIES:
+:CUSTOM_ID: alignment-debug
+:END:
+This cell checks the coordinate alignment used by the smoke run without
+building the heavy forward-model graph. The intended outcome is that
+=lat= and =lon= have the same length and match within small floating-point
+tolerance. If so, the production path can safely replace the flux spatial
+coordinates with the footprint coordinates before compute.
+
+#+begin_src jupyter-python
+RUN_ALIGNMENT_DEBUG = True
+
+if RUN_ALIGNMENT_DEBUG:
+    from verification_games.run_forward_model import (
+        SPATIAL_COORD_TOLERANCE,
+        _flux_slice_for_footprint,
+    )
+
+    fp_debug = get_month_footprint(site="MHD", start_date="2021-01-01", end_date="2021-02-01")
+    flux_debug = open_staged_flux(staged_path)
+    flux_slice_debug = _flux_slice_for_footprint(flux_debug, fp_debug)
+
+    def _step_summary(values):
+        values = np.asarray(values)
+        if values.size < 2:
+            return {"step_min": np.nan, "step_median": np.nan, "step_max": np.nan}
+        diffs = np.diff(values.astype("float64"))
+        return {
+            "step_min": float(np.nanmin(diffs)),
+            "step_median": float(np.nanmedian(diffs)),
+            "step_max": float(np.nanmax(diffs)),
+        }
+
+    def _coord_report(dim):
+        flux_coord = flux_slice_debug[dim]
+        fp_coord = fp_debug[dim]
+        flux_values = np.asarray(flux_coord.values)
+        fp_values = np.asarray(fp_coord.values)
+        row = {
+            "dim": dim,
+            "flux_size": flux_values.size,
+            "fp_size": fp_values.size,
+            "flux_dtype": str(flux_values.dtype),
+            "fp_dtype": str(fp_values.dtype),
+            "flux_first": float(flux_values[0]),
+            "fp_first": float(fp_values[0]),
+            "flux_last": float(flux_values[-1]),
+            "fp_last": float(fp_values[-1]),
+            "identical": bool(flux_coord.identical(fp_coord)),
+            "same_size": bool(flux_values.shape == fp_values.shape),
+        }
+        row.update({f"flux_{key}": value for key, value in _step_summary(flux_values).items()})
+        row.update({f"fp_{key}": value for key, value in _step_summary(fp_values).items()})
+
+        if flux_values.shape == fp_values.shape:
+            diff = flux_values.astype("float64") - fp_values.astype("float64")
+            abs_diff = np.abs(diff)
+            imax = int(np.nanargmax(abs_diff))
+            row.update(
+                {
+                    "max_abs_diff": float(abs_diff[imax]),
+                    "mean_abs_diff": float(np.nanmean(abs_diff)),
+                    "argmax": imax,
+                    "flux_at_argmax": float(flux_values[imax]),
+                    "fp_at_argmax": float(fp_values[imax]),
+                    "allclose_1e-6": bool(np.allclose(flux_values, fp_values, rtol=0.0, atol=1e-6)),
+                    "allclose_1e-5": bool(np.allclose(flux_values, fp_values, rtol=0.0, atol=1e-5)),
+                    "allclose_1e-4": bool(np.allclose(flux_values, fp_values, rtol=0.0, atol=1e-4)),
+                }
+            )
+        return row
+
+    coord_report = pd.DataFrame([_coord_report("lat"), _coord_report("lon")])
+    print(coord_report.to_string(index=False))
+
+    for dim in ("lat", "lon"):
+        flux_values = np.asarray(flux_slice_debug[dim].values)
+        fp_values = np.asarray(fp_debug[dim].values)
+        if flux_values.shape != fp_values.shape:
+            print(f"{dim}: size mismatch; cannot override coordinates safely.")
+            continue
+        mismatch = np.flatnonzero(~np.isclose(flux_values, fp_values, rtol=0.0, atol=SPATIAL_COORD_TOLERANCE))
+        if mismatch.size:
+            print(f"{dim}: first mismatches beyond {SPATIAL_COORD_TOLERANCE:g}")
+            preview = pd.DataFrame(
+                {
+                    "index": mismatch[:10],
+                    "flux": flux_values[mismatch[:10]],
+                    "footprint": fp_values[mismatch[:10]],
+                    "diff": flux_values[mismatch[:10]].astype("float64") - fp_values[mismatch[:10]].astype("float64"),
+                }
+            )
+            print(preview.to_string(index=False))
+        else:
+            print(f"{dim}: safe to assign footprint coordinate to flux at atol={SPATIAL_COORD_TOLERANCE:g}.")
+
+    fp_time = pd.DatetimeIndex(fp_debug["fp_time_resolved"]["time"].values)
+    flux_time = pd.DatetimeIndex(flux_debug["time"].values)
+    flux_slice_time = pd.DatetimeIndex(flux_slice_debug["time"].values)
+    h_back_hours = np.rint(fp_debug["fp_time_resolved"]["H_back"].values).astype("int64")
+    max_lag = int(h_back_hours.max()) if h_back_hours.size else 0
+    expected_flux_time = pd.date_range(fp_time[0] - pd.Timedelta(hours=max_lag), fp_time[-1], freq="h")
+    missing_flux_times = expected_flux_time.difference(flux_time)
+
+    time_report = {
+        "fp_start": fp_time[0],
+        "fp_end": fp_time[-1],
+        "fp_count": len(fp_time),
+        "flux_slice_start": flux_slice_time[0],
+        "flux_slice_end": flux_slice_time[-1],
+        "flux_slice_count": len(flux_slice_time),
+        "max_h_back_hours": max_lag,
+        "expected_flux_start": expected_flux_time[0],
+        "expected_flux_end": expected_flux_time[-1],
+        "expected_flux_count": len(expected_flux_time),
+        "missing_expected_flux_times": len(missing_flux_times),
+        "fp_hourly": bool((pd.Series(fp_time).diff().dropna() == pd.Timedelta(hours=1)).all()),
+        "flux_hourly": bool((pd.Series(flux_time).diff().dropna() == pd.Timedelta(hours=1)).all()),
+    }
+    print(pd.Series(time_report).to_string())
+    if len(missing_flux_times):
+        print("First missing expected flux times:", list(missing_flux_times[:10]))
+#+end_src
+
+
 ** Smoke run
 :PROPERTIES:
 :CUSTOM_ID: smoke-run
@@ -396,58 +522,7 @@ if RUN_SMOKE:
 #+end_src
 
 #+RESULTS:
-:RESULTS:
-: Running fp_x_flux for MHD 2021-01
-: Fetching footprint: {'site': 'mhd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-01-01', 'end_date': '2021-02-01'}
-# [goto error]
-#+begin_example
----------------------------------------------------------------------------
-ValueError                                Traceback (most recent call last)
-Cell In[10], line 4
-      1 RUN_SMOKE = True
-      2
-      3 if RUN_SMOKE:
-----> 4     smoke = run_site_month(
-      5         site="MHD",
-      6         start_date="2021-01-01",
-      7         end_date="2021-02-01",
 
-File /group/chem/acrg/verification_games_round_2/verification-games/src/verification_games/run_forward_model.py:368, in run_site_month(site, start_date, end_date, flux_zarr_path, output_dir, inlet, footprint_domain, footprint_store, footprint_species, species, scenarios, sectors, time_chunk, source_chunk, fillna_zero, skip_existing, overwrite)
-    366 flux = open_staged_flux(flux_zarr_path)
-    367 flux = select_flux_sources(flux, species=species, scenarios=scenarios, sectors=sectors)
---> 368 result = compute_fp_x_flux(
-    369     fp,
-    370     flux,
-    371     time_chunk=time_chunk,
-    372     source_chunk=source_chunk,
-    373     fillna_zero=fillna_zero,
-    374 )
-    375 result = result.assign_attrs(
-    376     {
-    377         "site": site_upper,
-   (...)    384     }
-    385 )
-    386 write_fp_x_flux_zarr(result, target, overwrite=overwrite)
-
-File /group/chem/acrg/verification_games_round_2/verification-games/src/verification_games/run_forward_model.py:234, in compute_fp_x_flux(fp, flux, time_chunk, source_chunk, fillna_zero)
-    232 """Build the lazy ``(footprint * flux).sum(lat, lon)`` expression."""
-    233 flux_slice = _flux_slice_for_footprint(flux, fp)
---> 234 flux_slice = _harmonize_spatial_coords(flux_slice, fp)
-    235 lat_chunk = int(fp.sizes["lat"])
-    236 lon_chunk = int(fp.sizes["lon"])
-
-File /group/chem/acrg/verification_games_round_2/verification-games/src/verification_games/run_forward_model.py:214, in _harmonize_spatial_coords(flux, fp)
-    212         continue
-    213     if not _coordinate_values_match(flux.coords[dim], fp.coords[dim]):
---> 214         raise ValueError(
-    215             f"Flux and footprint {dim!r} coordinates do not match; regrid before forward modelling."
-    216         )
-    217     updates[dim] = fp.coords[dim]
-    219 if not updates:
-
-ValueError: Flux and footprint 'lon' coordinates do not match; regrid before forward modelling.
-#+end_example
-:END:
 
 
 
