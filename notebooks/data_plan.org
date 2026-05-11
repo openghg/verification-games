@@ -1,0 +1,479 @@
+#+title: Data Plan
+
+#+property: header-args:jupyter-python :kernel verification-games :session /jpy:localhost#8888:vg-data-plan :async yes :exports both
+
+#+begin_src elisp
+(setq-local org-image-actual-width '(900))
+(setq jupyter-repl-maximum-output 5000)
+#+end_src
+
+#+RESULTS:
+: 5000
+
+#+begin_src jupyter-python
+%load_ext autoreload
+%autoreload 2
+#+end_src
+
+#+RESULTS:
+
+#+begin_src jupyter-python
+from pathlib import Path
+from pprint import pprint
+#+end_src
+
+#+RESULTS:
+
+#+begin_src jupyter-python
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import xarray as xr
+#+end_src
+
+* Catalog and openghg set-up
+
+#+begin_src jupyter-python
+from ogcat import Catalog
+
+vg_path = Path("/group/chem/acrg/verification_games_round_2")
+catalog_path = vg_path / "games_catalog"
+
+games_cat = Catalog.open(catalog_path)
+#+end_src
+
+#+RESULTS:
+
+#+begin_src jupyter-python
+from openghg.retrieve import search_footprints, get_footprint
+#+end_src
+
+#+RESULTS:
+
+* Footprints
+
+** Site list
+
+** Closer look at MHD
+
+** TODO get PUY footprints
+
+* Fluxes
+
+** TODO Fixing fluxes in games catalog
+
+These have the wrong record type; I need to fix that.
+#+begin_src jupyter-python
+flux_res = games_cat.search(where={"record_type": "verification_games_obs"}, as_record_set=True)
+
+print(flux_res.to_dataframe(["id", "species", "games_scenario"]))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+    id species games_scenario
+0   77      o2           BASE
+1   78      o2           ATEN
+2   79      o2           DFIN
+3   80      o2           HFRA
+4   81      o2           HGER
+5   82      o2           PTEN
+6   83     co2           ATEN
+7   84     co2           BASE
+8   85     co2           DFIN
+9   86     co2           HFRA
+10  87     co2           HGER
+11  88     co2           PTEN
+#+end_example
+
+#+begin_src jupyter-python
+pprint(games_cat.get("77"))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+CatalogRecord(catalog='games-catalog',
+              time_added='2026-05-07T20:00:50Z',
+              id='77',
+              record_type='verification_games_obs',
+              locator=ArtifactLocator(kind='path',
+                                      value='/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_obs/UOB/CTE-HR_filled_o2_fluxes_none_EUROPE_BASE_o2_concentrations_202012-202112.nc',
+                                      relative_path='data/verification_games_obs/UOB/CTE-HR_filled_o2_fluxes_none_EUROPE_BASE_o2_concentrations_202012-202112.nc'),
+              stored_abspath='/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_obs/UOB/CTE-HR_filled_o2_fluxes_none_EUROPE_BASE_o2_concentrations_202012-202112.nc',
+              stored_relpath='data/verification_games_obs/UOB/CTE-HR_filled_o2_fluxes_none_EUROPE_BASE_o2_concentrations_202012-202112.nc',
+              storage_mode='write',
+              original_path=None,
+              original_filename=None,
+              suffixes=[],
+              user_metadata={'domain': 'EUROPE',
+                             'flux_product': 'CTE-HR_filled_o2_fluxes',
+                             'footprint_model': 'none',
+                             'games_scenario': 'BASE',
+                             'inputs': ['49', '36', '40', '41', '45'],
+                             'species': 'o2',
+                             'university_abbr': 'UOB',
+                             'year': '202012-202112'},
+              derived_metadata={'chunks': {'lat': 293, 'lon': 391, 'time': 24},
+                                'domain': 'EUROPE',
+                                'dtype': 'float32',
+                                'fallback_sources': {'FF': 'gridfed_total_o2',
+                                                     'GPP': 'sib4_o2_gpp',
+                                                     'TER': 'sib4_o2_ter',
+                                                     'ocean': 'cesm_scaled_o2_ocean'},
+                                'input_record_ids': ['49',
+                                                     '36',
+                                                     '40',
+                                                     '41',
+                                                     '45'],
+                                'output_variables': ['GPP',
+                                                     'TER',
+                                                     'FF',
+                                                     'ocean'],
+                                'reader_hint': 'xarray.open_dataset',
+                                'scenario': 'BASE',
+                                'sizes': {'lat': 293, 'lon': 391, 'time': 9048},
+                                'source_paths': {'FF': '/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/GridFED/v2024.0/o2_TOTAL_EUROPE_fossil-ff-monthly_2020-2021.nc',
+                                                 'GPP': '/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/sib4/o2_GPP_EUROPE_biosphere-fallback-gpp_202012-202112.nc',
+                                                 'TER': '/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/sib4/o2_TER_EUROPE_biosphere-fallback-ter_202012-202112.nc',
+                                                 'ocean': '/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/cesm_scaled_o2/o2_ocean_EUROPE_cesm-apo-regridded_20201201-20211231.nc',
+                                                 'primary_o2': '/group/chem/acrg/verification_games_round_2/verification-games-fluxes/data/raw/PARIS_BASE_O2.nc'},
+                                'units': 'mol m-2 s-1'},
+              naming_metadata={'resolved_directory': 'verification_games_obs/UOB',
+                               'resolved_filename': 'CTE-HR_filled_o2_fluxes_none_EUROPE_BASE_o2_concentrations_202012-202112.nc',
+                               'storage_relative_path': 'verification_games_obs/UOB/CTE-HR_filled_o2_fluxes_none_EUROPE_BASE_o2_concentrations_202012-202112.nc'})
+#+end_example
+
+
+*** DONE Make a new record schema for =verification_games_flux=
+
+#+begin_src jupyter-python
+from ogcat import ArtifactLocator, CatalogSpec, CatalogRecord, MetadataFieldDescription, RecordSchema
+
+auke_flux_file_template = "PARIS_{games_scenario}_{species}.nc"
+
+games_data_schema = RecordSchema(
+    description="Scenario fluxes for PARIS verification games.",
+    directory_template="verification_games_flux/{university_abbr|}",
+    filename_template=auke_flux_file_template,
+    metadata_fields=[
+        MetadataFieldDescription(name="title", description="Short description of data."),
+        MetadataFieldDescription(name="species", description="Gas species ."),
+        MetadataFieldDescription(name="domain", description="Spatial domain."),
+        MetadataFieldDescription(name="games_scenario", description="Scenario for PARIS verification games."),
+        MetadataFieldDescription(name="inputs", description="Description of input data."),
+        MetadataFieldDescription(name="university_abbr", description="Abbreviation of university/group that created the obs.", example="WUR or UOB"),
+    ]
+)
+#+end_src
+
+#+RESULTS:
+
+
+#+begin_src jupyter-python
+games_cat.add_record_schema("verification_games_flux", games_data_schema)
+#+end_src
+
+#+RESULTS:
+
+*** TODO Add games flux data by copying
+
+#+begin_src jupyter-python
+def get_path_and_metadata(record: CatalogRecord) -> tuple[str, dict, dict]:
+    """Return path to record's data, user metadata dict, and derived metadata dict."""
+    path = record.locator.value
+    user_metadata = record.user_metadata.copy()
+    derived_metadata = record.derived_metadata
+
+    # fix the user metadata by removing unnecessary values
+    user_metadata.pop("flux_product")
+    user_metadata.pop("footprint_model")
+
+    return path, user_metadata, derived_metadata
+#+end_src
+
+#+RESULTS:
+
+To apply the derived metadata we need a hook. We'll just make a dictionary mapping the source paths to the metadata we want to add, then get return that metadata from an =extract_metadata= hook.
+
+#+begin_src jupyter-python
+from dataclasses import dataclass
+from ogcat import OperationContext
+
+
+derived_metadata_dict = {}
+
+for record in flux_res:
+    path, _, metadata = get_path_and_metadata(record)
+    derived_metadata_dict[path] = metadata
+
+
+@dataclass
+class InjectDerivedMetadataHook:
+    derived_metadata_dict: dict
+
+    def extract_metadata(self, context: OperationContext) -> dict:
+        return self.derived_metadata_dict.get(str(context.source_path))
+
+#+end_src
+
+#+RESULTS:
+
+#+begin_src jupyter-python
+pprint(next(iter(derived_metadata_dict.values())))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+{'chunks': {'lat': 293, 'lon': 391, 'time': 24},
+ 'domain': 'EUROPE',
+ 'dtype': 'float32',
+ 'fallback_sources': {'FF': 'gridfed_total_o2',
+                      'GPP': 'sib4_o2_gpp',
+                      'TER': 'sib4_o2_ter',
+                      'ocean': 'cesm_scaled_o2_ocean'},
+ 'input_record_ids': ['49', '36', '40', '41', '45'],
+ 'output_variables': ['GPP', 'TER', 'FF', 'ocean'],
+ 'reader_hint': 'xarray.open_dataset',
+ 'scenario': 'BASE',
+ 'sizes': {'lat': 293, 'lon': 391, 'time': 9048},
+ 'source_paths': {'FF': '/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/GridFED/v2024.0/o2_TOTAL_EUROPE_fossil-ff-monthly_2020-2021.nc',
+                  'GPP': '/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/sib4/o2_GPP_EUROPE_biosphere-fallback-gpp_202012-202112.nc',
+                  'TER': '/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/sib4/o2_TER_EUROPE_biosphere-fallback-ter_202012-202112.nc',
+                  'ocean': '/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/cesm_scaled_o2/o2_ocean_EUROPE_cesm-apo-regridded_20201201-20211231.nc',
+                  'primary_o2': '/group/chem/acrg/verification_games_round_2/verification-games-fluxes/data/raw/PARIS_BASE_O2.nc'},
+ 'units': 'mol m-2 s-1'}
+#+end_example
+
+Now let's make a fresh catalog with this hook (so we don't need to think about it later).
+
+
+#+begin_src jupyter-python
+from ogcat import PluginRegistry
+
+_games_cat = Catalog.open(catalog_path, plugins=PluginRegistry([InjectDerivedMetadataHook(derived_metadata_dict)]))
+#+end_src
+
+#+RESULTS:
+
+
+#+begin_src jupyter-python
+COPY_TO_VERIFICATION_GAMES_FLUX = False
+
+if COPY_TO_VERIFICATION_GAMES_FLUX:
+    for record in flux_res:
+        path, metadata, _ = get_path_and_metadata(record)
+        metadata["title"] = "Fluxes for PARIS verification games 2026."
+        _games_cat.add_file(path, metadata, operation="copy", record_type="verification_games_flux")
+#+end_src
+
+#+RESULTS:
+
+#+begin_src jupyter-python
+vg_flux_res = games_cat.search(where={"record_type": "verification_games_flux"})
+pprint(vg_flux_res[0])
+#+end_src
+
+#+RESULTS:
+#+begin_example
+CatalogRecord(catalog='games-catalog',
+              time_added='2026-05-09T14:27:08Z',
+              id='89',
+              record_type='verification_games_flux',
+              locator=ArtifactLocator(kind='path',
+                                      value='/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_BASE_o2.nc',
+                                      relative_path='data/verification_games_flux/UOB/PARIS_BASE_o2.nc'),
+              stored_abspath='/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_BASE_o2.nc',
+              stored_relpath='data/verification_games_flux/UOB/PARIS_BASE_o2.nc',
+              storage_mode='copy',
+              original_path='/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_obs/UOB/CTE-HR_filled_o2_fluxes_none_EUROPE_BASE_o2_concentrations_202012-202112.nc',
+              original_filename='CTE-HR_filled_o2_fluxes_none_EUROPE_BASE_o2_concentrations_202012-202112.nc',
+              suffixes=['.nc'],
+              user_metadata={'domain': 'EUROPE',
+                             'games_scenario': 'BASE',
+                             'inputs': ['49', '36', '40', '41', '45'],
+                             'species': 'o2',
+                             'title': 'Fluxes for PARIS verification games '
+                                      '2026.',
+                             'university_abbr': 'UOB',
+                             'year': '202012-202112'},
+              derived_metadata={'netcdf': {'attrs': {},
+                                           'coords': ['lat', 'lon', 'time'],
+                                           'data_vars': ['FF',
+                                                         'GPP',
+                                                         'TER',
+                                                         'ocean'],
+                                           'dims': {'lat': 293,
+                                                    'lon': 391,
+                                                    'time': 9048}}},
+              naming_metadata={'directory_template': 'verification_games_flux/{university_abbr|}',
+                               'filename_template': 'PARIS_{games_scenario}_{species}.nc',
+                               'record_schema': 'verification_games_flux',
+                               'resolved_directory': 'data/verification_games_flux/UOB',
+                               'resolved_filename': 'PARIS_BASE_o2.nc',
+                               'storage_relative_path': 'data/verification_games_flux/UOB/PARIS_BASE_o2.nc'})
+#+end_example
+
+The derived metadata hook didn't work (forgot to convert paths to strings), so I'll just add the derived metadata now.
+
+#+begin_src jupyter-python
+from dataclasses import replace as dc_replace
+
+UPDATE_DERIVED_METADATA = False
+
+if UPDATE_DERIVED_METADATA:
+    for r in vg_flux_res:
+        rid, species, scenario = r.id, r.user_metadata["species"], r.user_metadata["games_scenario"]
+        res = games_cat.search(where={"record_type": "verification_games_obs", "species": species, "games_scenario": scenario})
+        dmd = res[0].derived_metadata
+
+        updated_r = dc_replace(r, derived_metadata=r.derived_metadata | dmd)
+        games_cat.repository.update(updated_r)
+#+end_src
+
+#+RESULTS:
+
+#+begin_src jupyter-python
+vg_flux_res = games_cat.search(where={"record_type": "verification_games_flux"})
+pprint(vg_flux_res[0])
+#+end_src
+
+#+RESULTS:
+#+begin_example
+CatalogRecord(catalog='games-catalog',
+              time_added='2026-05-09T14:27:08Z',
+              id='89',
+              record_type='verification_games_flux',
+              locator=ArtifactLocator(kind='path',
+                                      value='/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_BASE_o2.nc',
+                                      relative_path='data/verification_games_flux/UOB/PARIS_BASE_o2.nc'),
+              stored_abspath='/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_BASE_o2.nc',
+              stored_relpath='data/verification_games_flux/UOB/PARIS_BASE_o2.nc',
+              storage_mode='copy',
+              original_path='/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_obs/UOB/CTE-HR_filled_o2_fluxes_none_EUROPE_BASE_o2_concentrations_202012-202112.nc',
+              original_filename='CTE-HR_filled_o2_fluxes_none_EUROPE_BASE_o2_concentrations_202012-202112.nc',
+              suffixes=['.nc'],
+              user_metadata={'domain': 'EUROPE',
+                             'games_scenario': 'BASE',
+                             'inputs': ['49', '36', '40', '41', '45'],
+                             'species': 'o2',
+                             'title': 'Fluxes for PARIS verification games '
+                                      '2026.',
+                             'university_abbr': 'UOB',
+                             'year': '202012-202112'},
+              derived_metadata={'chunks': {'lat': 293, 'lon': 391, 'time': 24},
+                                'domain': 'EUROPE',
+                                'dtype': 'float32',
+                                'fallback_sources': {'FF': 'gridfed_total_o2',
+                                                     'GPP': 'sib4_o2_gpp',
+                                                     'TER': 'sib4_o2_ter',
+                                                     'ocean': 'cesm_scaled_o2_ocean'},
+                                'input_record_ids': ['49',
+                                                     '36',
+                                                     '40',
+                                                     '41',
+                                                     '45'],
+                                'netcdf': {'attrs': {},
+                                           'coords': ['lat', 'lon', 'time'],
+                                           'data_vars': ['FF',
+                                                         'GPP',
+                                                         'TER',
+                                                         'ocean'],
+                                           'dims': {'lat': 293,
+                                                    'lon': 391,
+                                                    'time': 9048}},
+                                'output_variables': ['GPP',
+                                                     'TER',
+                                                     'FF',
+                                                     'ocean'],
+                                'reader_hint': 'xarray.open_dataset',
+                                'scenario': 'BASE',
+                                'sizes': {'lat': 293, 'lon': 391, 'time': 9048},
+                                'source_paths': {'FF': '/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/GridFED/v2024.0/o2_TOTAL_EUROPE_fossil-ff-monthly_2020-2021.nc',
+                                                 'GPP': '/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/sib4/o2_GPP_EUROPE_biosphere-fallback-gpp_202012-202112.nc',
+                                                 'TER': '/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/sib4/o2_TER_EUROPE_biosphere-fallback-ter_202012-202112.nc',
+                                                 'ocean': '/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/cesm_scaled_o2/o2_ocean_EUROPE_cesm-apo-regridded_20201201-20211231.nc',
+                                                 'primary_o2': '/group/chem/acrg/verification_games_round_2/verification-games-fluxes/data/raw/PARIS_BASE_O2.nc'},
+                                'units': 'mol m-2 s-1'},
+              naming_metadata={'directory_template': 'verification_games_flux/{university_abbr|}',
+                               'filename_template': 'PARIS_{games_scenario}_{species}.nc',
+                               'record_schema': 'verification_games_flux',
+                               'resolved_directory': 'data/verification_games_flux/UOB',
+                               'resolved_filename': 'PARIS_BASE_o2.nc',
+                               'storage_relative_path': 'data/verification_games_flux/UOB/PARIS_BASE_o2.nc'})
+#+end_example
+
+
+*** WAIT Delete incorrect entries
+
+Wait until you're sure the flux data is correct.
+
+#+begin_src jupyter-python
+!ls -lh {Path(vg_flux_res[0].locator.value).parent}
+#+end_src
+
+#+RESULTS:
+#+begin_example
+total 52G
+-rw-rw-r-- 1 bm13805 acrg 5.5G May  8 09:57 PARIS_ATEN_co2.nc
+-rw-rw-r-- 1 bm13805 acrg 6.1G May  7 21:39 PARIS_ATEN_o2.nc
+-rw-rw-r-- 1 bm13805 acrg 5.5G May  8 10:02 PARIS_BASE_co2.nc
+-rw-rw-r-- 1 bm13805 acrg 8.6G May  7 21:12 PARIS_BASE_o2.nc
+-rw-rw-r-- 1 bm13805 acrg 5.5G May  8 10:07 PARIS_DFIN_co2.nc
+-rw-rw-r-- 1 bm13805 acrg 1.1G May  7 23:07 PARIS_DFIN_o2.nc
+-rw-rw-r-- 1 bm13805 acrg 5.5G May  8 10:12 PARIS_HFRA_co2.nc
+-rw-rw-r-- 1 bm13805 acrg 1.1G May  7 23:10 PARIS_HFRA_o2.nc
+-rw-rw-r-- 1 bm13805 acrg 5.5G May  8 10:17 PARIS_HGER_co2.nc
+-rw-rw-r-- 1 bm13805 acrg 1.1G May  7 23:13 PARIS_HGER_o2.nc
+-rw-rw-r-- 1 bm13805 acrg 5.5G May  8 10:21 PARIS_PTEN_co2.nc
+-rw-rw-r-- 1 bm13805 acrg 1.1G May  7 23:16 PARIS_PTEN_o2.nc
+#+end_example
+
+Okay looks like the data has been copied successfully, but there isn't a delete method for =Catalog=, so maybe we'll just leave it for now.
+
+** TODO Verify that fluxes are correct
+
+Some of the fluxes seem too small (all the CO2 fluxes have the same size, but the O2 fluxes have widely varying sizes).
+
+
+#+begin_src jupyter-python
+!ls -lhst {Path(vg_flux_res[0].locator.value).parent} | grep "_o2"
+#+end_src
+
+#+RESULTS:
+: 1.1G -rw-rw-r-- 1 bm13805 acrg 1.1G May  7 23:16 PARIS_PTEN_o2.nc
+: 1.1G -rw-rw-r-- 1 bm13805 acrg 1.1G May  7 23:13 PARIS_HGER_o2.nc
+: 1.1G -rw-rw-r-- 1 bm13805 acrg 1.1G May  7 23:10 PARIS_HFRA_o2.nc
+: 1.1G -rw-rw-r-- 1 bm13805 acrg 1.1G May  7 23:07 PARIS_DFIN_o2.nc
+: 6.1G -rw-rw-r-- 1 bm13805 acrg 6.1G May  7 21:39 PARIS_ATEN_o2.nc
+: 8.6G -rw-rw-r-- 1 bm13805 acrg 8.6G May  7 21:12 PARIS_BASE_o2.nc
+
+#+begin_src jupyter-python
+games_flux_dir = Path(vg_flux_res[0].locator.value).parent
+#+end_src
+
+#+RESULTS:
+
+#+begin_src jupyter-python
+%%bash -s $games_flux_dir
+files=$(ls -lst $1 | grep "_o2" | awk '{ print $10}')
+
+for x in $files; do file "$1"/"$x"; echo; done;
+#+end_src
+
+#+RESULTS:
+:RESULTS:
+#+begin_example
+/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_PTEN_o2.nc: Hierarchical Data Format (version 5) data
+
+/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_HGER_o2.nc: Hierarchical Data Format (version 5) data
+
+/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_HFRA_o2.nc: Hierarchical Data Format (version 5) data
+
+/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_DFIN_o2.nc: Hierarchical Data Format (version 5) data
+
+/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_ATEN_o2.nc: Hierarchical Data Format (version 5) data
+
+/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_BASE_o2.nc: Hierarchical Data Format (version 5) data
+
+#+end_example
+:END:
