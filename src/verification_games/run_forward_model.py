@@ -274,6 +274,29 @@ def zarr_encoding(
     return {name: {"compressor": compressor} for name in ds.data_vars}
 
 
+def _stringify_value(value) -> str:
+    if isinstance(value, bytes):
+        return value.decode()
+    return str(value)
+
+
+def _zarr_safe_string_coords(ds: xr.Dataset) -> xr.Dataset:
+    """Convert object/string coordinates to plain Python strings before Zarr writes."""
+    updates = {}
+    for name, coord in ds.coords.items():
+        if coord.dtype.kind not in {"O", "S", "U"}:
+            continue
+        values = np.asarray(coord.values, dtype=object)
+        string_values = np.array([_stringify_value(value) for value in values.ravel()], dtype=object).reshape(
+            values.shape
+        )
+        updates[name] = xr.DataArray(string_values, dims=coord.dims, attrs=dict(coord.attrs), name=name)
+
+    if not updates:
+        return ds
+    return ds.assign_coords(updates)
+
+
 def fp_x_flux_output_path(output_dir: str | Path, *, site: str, start_date: str | pd.Timestamp) -> Path:
     """Return the canonical site/month output path."""
     month = pd.Timestamp(start_date).strftime("%Y%m")
@@ -295,9 +318,14 @@ def write_fp_x_flux_zarr(
 
     tmp = target.parent / f".{target.name}.{uuid4().hex}.tmp"
     target.parent.mkdir(parents=True, exist_ok=True)
-    ds = result.to_dataset()
+    ds = _zarr_safe_string_coords(result.to_dataset())
     print(f"Writing fp_x_flux temporary Zarr: {tmp}")
-    ds.to_zarr(tmp, mode="w", consolidated=consolidated, encoding=zarr_encoding(ds, compressor=compressor))
+    try:
+        ds.to_zarr(tmp, mode="w", consolidated=consolidated, encoding=zarr_encoding(ds, compressor=compressor))
+    except Exception:
+        if tmp.exists():
+            shutil.rmtree(tmp)
+        raise
 
     if target.exists():
         print(f"Removing existing fp_x_flux Zarr before overwrite: {target}")

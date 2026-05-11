@@ -30,6 +30,7 @@ site/month jobs.
 from pathlib import Path
 
 from dask import compute as dask_compute
+import numpy as np
 import pandas as pd
 import xarray as xr
 
@@ -496,6 +497,29 @@ if RUN_ALIGNMENT_DEBUG:
         print("First missing expected flux times:", list(missing_flux_times[:10]))
 #+end_src
 
+#+RESULTS:
+#+begin_example
+Fetching footprint: {'site': 'mhd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-01-01', 'end_date': '2021-02-01'}
+dim  flux_size  fp_size flux_dtype fp_dtype  flux_first   fp_first  flux_last   fp_last  identical  same_size  flux_step_min  flux_step_median  flux_step_max  fp_step_min  fp_step_median  fp_step_max  max_abs_diff  mean_abs_diff  argmax  flux_at_argmax  fp_at_argmax  allclose_1e-6  allclose_1e-5  allclose_1e-4
+lat        293      293    float64  float32   10.729000  10.729000  79.056999 79.056999      False       True       0.233994          0.234001       0.234001     0.233994        0.234001     0.234001      0.000008   1.659979e-07     263       72.271004     72.270996          False           True           True
+lon        391      391    float64  float32  -97.900002 -97.899994  39.380001 39.380001      False       True       0.351997          0.352000       0.352005     0.351997        0.352000     0.352005      0.000008   3.217355e-06       0      -97.900002    -97.899994          False           True           True
+lat: safe to assign footprint coordinate to flux at atol=1e-05.
+lon: safe to assign footprint coordinate to flux at atol=1e-05.
+fp_start                       2021-01-02 00:00:00
+fp_end                         2021-01-31 23:00:00
+fp_count                                       720
+flux_slice_start               2021-01-01 01:00:00
+flux_slice_end                 2021-02-01 00:00:00
+flux_slice_count                               744
+max_h_back_hours                                23
+expected_flux_start            2021-01-01 01:00:00
+expected_flux_end              2021-01-31 23:00:00
+expected_flux_count                            743
+missing_expected_flux_times                      0
+fp_hourly                                     True
+flux_hourly                                   True
+#+end_example
+
 
 ** Smoke run
 :PROPERTIES:
@@ -503,6 +527,30 @@ if RUN_ALIGNMENT_DEBUG:
 :END:
 The smoke run uses all staged sources for MHD in January 2021 and writes
 one =time x source= Zarr output.
+
+#+begin_src jupyter-python
+!ls -lha /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_x_flux/mhd
+#+end_src
+
+#+RESULTS:
+: total 3.0K
+: drwxrwsr-x 3 bm13805 acrg 4.0K May 11 22:43 .
+: drwxrwsr-x 3 bm13805 acrg 4.0K May 11 22:43 ..
+: drwxrwsr-x 5 bm13805 acrg 4.0K May 11 22:43 .mhd_202101_fp_x_flux.zarr.6c104c3defc84ee7bbaffc00368338cc.tmp
+
+#+begin_src jupyter-python
+CLEAN_STALE_SMOKE_TMP = False
+
+if CLEAN_STALE_SMOKE_TMP:
+    import shutil
+
+    smoke_output_dir = FP_X_FLUX_OUTPUT_DIR / "mhd"
+    for tmp_path in smoke_output_dir.glob(".mhd_202101_fp_x_flux.zarr.*.tmp"):
+        print(f"Removing stale smoke temp output: {tmp_path}")
+        shutil.rmtree(tmp_path)
+#+end_src
+
+#+RESULTS:
 
 #+begin_src jupyter-python
 RUN_SMOKE = True
@@ -522,6 +570,7 @@ if RUN_SMOKE:
 #+end_src
 
 #+RESULTS:
+
 
 
 
