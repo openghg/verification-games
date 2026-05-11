@@ -72,12 +72,16 @@ STAGED_FLUX_ZARR = (
     / "flux"
     / "derived"
     / "PARIS_CTE-HR_filled_fluxes_staged"
-    / "zarr_v1"
-    / "paris_cte-hr_filled_fluxes_EUROPE_flux_stage_filled_nan_zero_forward_model_input_202012-202112.zarr"
+    / "zarr_v2"
+    / "paris_cte-hr_filled_fluxes_EUROPE_flux_stage_from_scenario_zarr_v2_filled_nan_zero_forward_model_input_202012-202112.zarr"
 )
 STAGED_FLUX_TEMP = WORK_ROOT / "staging_tmp"
 FP_X_FLUX_OUTPUT_DIR = WORK_ROOT / "fp_x_flux"
 LOG_DIR = WORK_ROOT / "dask_logs"
+
+SOURCE_FLUX_PROCESSING_STAGE = "scenario_zarr"
+SOURCE_FLUX_VERSION = "v2"
+SOURCE_FLUX_FORMAT = "zarr"
 
 games_cat = open_games_catalog(CATALOG_PATH)
 #+end_src
@@ -145,26 +149,21 @@ pfwd -r $port -l 8787 -y
 *** Checking inputs
 
 #+begin_src jupyter-python
-results = games_cat.search(where={"record_type": "verification_games_flux", "university_abbr": "UOB"}, ignore_case=True, as_record_set=True)
-print(results.to_dataframe(["id", "species", "games_scenario"]).sort_values(["species", "games_scenario"]))
+source_flux_query = {
+    "record_type": "verification_games_flux",
+    "university_abbr": "UOB",
+    "processing_stage": SOURCE_FLUX_PROCESSING_STAGE,
+    "version": SOURCE_FLUX_VERSION,
+    "format": SOURCE_FLUX_FORMAT,
+}
+results = games_cat.search(where=source_flux_query, ignore_case=True, as_record_set=True)
+print(
+    results.to_dataframe(["id", "species", "games_scenario", "title"])
+    .sort_values(["species", "games_scenario"])
+)
 #+end_src
 
 #+RESULTS:
-#+begin_example
-     id species games_scenario
-6    95     co2           ATEN
-7    96     co2           BASE
-8    97     co2           DFIN
-9    98     co2           HFRA
-10   99     co2           HGER
-11  100     co2           PTEN
-1    90      o2           ATEN
-0    89      o2           BASE
-2    91      o2           DFIN
-3    92      o2           HFRA
-4    93      o2           HGER
-5    94      o2           PTEN
-#+end_example
 
 #+begin_src jupyter-python
 from ogcat import CatalogRecordSet
@@ -172,30 +171,22 @@ from ogcat import CatalogRecordSet
 from verification_games.flux_stage import find_flux_records
 
 
-results2 = CatalogRecordSet(find_flux_records(games_cat))
-print(results2.to_dataframe(["id", "species", "games_scenario"]))
+results2 = CatalogRecordSet(
+    find_flux_records(
+        games_cat,
+        processing_stage=SOURCE_FLUX_PROCESSING_STAGE,
+        version=SOURCE_FLUX_VERSION,
+        data_format=SOURCE_FLUX_FORMAT,
+    )
+)
+print(results2.to_dataframe(["id", "species", "games_scenario", "title"]))
 #+end_src
 
 #+RESULTS:
-#+begin_example
-     id species games_scenario
-0    95     co2           ATEN
-1    96     co2           BASE
-2    97     co2           DFIN
-3    98     co2           HFRA
-4    99     co2           HGER
-5   100     co2           PTEN
-6    90      o2           ATEN
-7    89      o2           BASE
-8    91      o2           DFIN
-9    92      o2           HFRA
-10   93      o2           HGER
-11   94      o2           PTEN
-#+end_example
 
 *** Create combined flux as zarr
 Set =RUN_STAGING = True= when ready. With =RUN_STAGING_DRY_RUN = True= this
-opens the inputs, builds the lazy stacked xarray object, and prints a summary
+opens the scenario-level Zarr inputs, builds the lazy stacked xarray object, and prints a summary
 without writing Zarr or triggering Dask compute. With =RUN_STAGING_DRY_RUN =
 False= it writes to a temporary Zarr directory, validates the staged
 structure, then moves it into place.
@@ -213,6 +204,9 @@ if RUN_STAGING:
         STAGED_FLUX_ZARR,
         temp_parent=STAGED_FLUX_TEMP,
         overwrite=False,
+        processing_stage=SOURCE_FLUX_PROCESSING_STAGE,
+        version=SOURCE_FLUX_VERSION,
+        data_format=SOURCE_FLUX_FORMAT,
         dry_run=RUN_STAGING_DRY_RUN,
     )
 else:
@@ -230,143 +224,7 @@ print(summary)
 #+end_src
 
 #+RESULTS:
-:RESULTS:
-#+begin_example
-Opening flux record 95: co2 ATEN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_ATEN_co2.nc
-Opening flux record 96: co2 BASE -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_BASE_co2.nc
-Opening flux record 97: co2 DFIN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_DFIN_co2.nc
-Opening flux record 98: co2 HFRA -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_HFRA_co2.nc
-Opening flux record 99: co2 HGER -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_HGER_co2.nc
-Opening flux record 100: co2 PTEN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_PTEN_co2.nc
-Opening flux record 90: o2 ATEN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_ATEN_o2.nc
-/group/chem/acrg/verification_games_round_2/verification-games/.venv/lib/python3.12/site-packages/xarray/namedarray/core.py:261: UserWarning: Duplicate dimension names present: dimensions {'time'} appear more than once in dims=('time', 'time', 'time'). We do not yet support duplicate dimension names, but we do allow initial construction of the object. We recommend you rename the dims immediately to become distinct, as most xarray functionality is likely to fail silently if you do not. To rename the dimensions you will need to set the ``.dims`` attribute of each variable, ``e.g. var.dims=('x0', 'x1')``.
-  self._dims = self._parse_dimensions(dims)
-/group/chem/acrg/verification_games_round_2/verification-games/.venv/lib/python3.12/site-packages/xarray/namedarray/core.py:261: UserWarning: Duplicate dimension names present: dimensions {'time'} appear more than once in dims=('time', 'time', 'time'). We do not yet support duplicate dimension names, but we do allow initial construction of the object. We recommend you rename the dims immediately to become distinct, as most xarray functionality is likely to fail silently if you do not. To rename the dimensions you will need to set the ``.dims`` attribute of each variable, ``e.g. var.dims=('x0', 'x1')``.
-  self._dims = self._parse_dimensions(dims)
-/group/chem/acrg/verification_games_round_2/verification-games/.venv/lib/python3.12/site-packages/xarray/namedarray/core.py:261: UserWarning: Duplicate dimension names present: dimensions {'time'} appear more than once in dims=('time', 'time', 'time'). We do not yet support duplicate dimension names, but we do allow initial construction of the object. We recommend you rename the dims immediately to become distinct, as most xarray functionality is likely to fail silently if you do not. To rename the dimensions you will need to set the ``.dims`` attribute of each variable, ``e.g. var.dims=('x0', 'x1')``.
-  self._dims = self._parse_dimensions(dims)
-/group/chem/acrg/verification_games_round_2/verification-games/src/verification_games/flux_stage.py:119: UserWarning: The specified chunks separate the stored chunks along dimension "time" starting at index 24. This could degrade performance. Instead, consider rechunking after loading.
-  ds = xr.open_dataset(path, chunks=chunks)
-/group/chem/acrg/verification_games_round_2/verification-games/.venv/lib/python3.12/site-packages/xarray/namedarray/core.py:261: UserWarning: Duplicate dimension names present: dimensions {'lon'} appear more than once in dims=('lon', 'lon', 'lon'). We do not yet support duplicate dimension names, but we do allow initial construction of the object. We recommend you rename the dims immediately to become distinct, as most xarray functionality is likely to fail silently if you do not. To rename the dimensions you will need to set the ``.dims`` attribute of each variable, ``e.g. var.dims=('x0', 'x1')``.
-  self._dims = self._parse_dimensions(dims)
-/group/chem/acrg/verification_games_round_2/verification-games/.venv/lib/python3.12/site-packages/xarray/namedarray/core.py:261: UserWarning: Duplicate dimension names present: dimensions {'lon'} appear more than once in dims=('lon', 'lon', 'lon'). We do not yet support duplicate dimension names, but we do allow initial construction of the object. We recommend you rename the dims immediately to become distinct, as most xarray functionality is likely to fail silently if you do not. To rename the dimensions you will need to set the ``.dims`` attribute of each variable, ``e.g. var.dims=('x0', 'x1')``.
-  self._dims = self._parse_dimensions(dims)
-/group/chem/acrg/verification_games_round_2/verification-games/src/verification_games/flux_stage.py:119: UserWarning: The specified chunks separate the stored chunks along dimension "time" starting at index 24. This could degrade performance. Instead, consider rechunking after loading.
-  ds = xr.open_dataset(path, chunks=chunks)
-/group/chem/acrg/verification_games_round_2/verification-games/src/verification_games/flux_stage.py:119: UserWarning: The specified chunks separate the stored chunks along dimension "time" starting at index 24. This could degrade performance. Instead, consider rechunking after loading.
-  ds = xr.open_dataset(path, chunks=chunks)
-/group/chem/acrg/verification_games_round_2/verification-games/src/verification_games/flux_stage.py:119: UserWarning: The specified chunks separate the stored chunks along dimension "time" starting at index 24. This could degrade performance. Instead, consider rechunking after loading.
-  ds = xr.open_dataset(path, chunks=chunks)
-Opening flux record 89: o2 BASE -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_BASE_o2.nc
-Opening flux record 91: o2 DFIN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_DFIN_o2.nc
-Opening flux record 92: o2 HFRA -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_HFRA_o2.nc
-Opening flux record 93: o2 HGER -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_HGER_o2.nc
-Opening flux record 94: o2 PTEN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_PTEN_o2.nc
-/group/chem/acrg/verification_games_round_2/verification-games/src/verification_games/flux_stage.py:119: UserWarning: The specified chunks separate the stored chunks along dimension "time" starting at index 24. This could degrade performance. Instead, consider rechunking after loading.
-  ds = xr.open_dataset(path, chunks=chunks)
-Stacking source co2_ATEN_GPP
-Stacking source co2_ATEN_TER
-Stacking source co2_ATEN_FF
-Stacking source co2_ATEN_ocean
-Stacking source co2_BASE_GPP
-Stacking source co2_BASE_TER
-Stacking source co2_BASE_FF
-Stacking source co2_BASE_ocean
-Stacking source co2_DFIN_GPP
-Stacking source co2_DFIN_TER
-Stacking source co2_DFIN_FF
-Stacking source co2_DFIN_ocean
-Stacking source co2_HFRA_GPP
-Stacking source co2_HFRA_TER
-Stacking source co2_HFRA_FF
-Stacking source co2_HFRA_ocean
-Stacking source co2_HGER_GPP
-Stacking source co2_HGER_TER
-Stacking source co2_HGER_FF
-Stacking source co2_HGER_ocean
-Stacking source co2_PTEN_GPP
-Stacking source co2_PTEN_TER
-Stacking source co2_PTEN_FF
-Stacking source co2_PTEN_ocean
-Stacking source o2_ATEN_GPP
-#+end_example
-# [goto error]
-#+begin_example
----------------------------------------------------------------------------
-KeyError                                  Traceback (most recent call last)
-Cell In[5], line 5
-      1 RUN_STAGING = True
-      2 RUN_STAGING_DRY_RUN = True
-      3
-      4 if RUN_STAGING:
-----> 5     staged_path, input_records = stage_flux_zarr(
-      6         games_cat,
-      7         STAGED_FLUX_ZARR,
-      8         temp_parent=STAGED_FLUX_TEMP,
 
-File /group/chem/acrg/verification_games_round_2/verification-games/src/verification_games/flux_stage.py:354, in stage_flux_zarr(catalog, target_path, temp_parent, overwrite, output_chunks, fill_value, compressor, dry_run)
-    342 def stage_flux_zarr(  # noqa: PLR0913
-    343     catalog,
-    344     target_path: str | Path,
-   (...)    351     dry_run: bool = False,
-    352 ) -> tuple[Path, list]:
-    353     """Build and write the all-source staged flux Zarr."""
---> 354     ds, records = build_staged_flux_dataset(catalog, output_chunks=output_chunks, fill_value=fill_value)
-    355     if dry_run:
-    356         print("Dry run: built lazy staged flux dataset; skipping to_zarr write.")
-
-File /group/chem/acrg/verification_games_round_2/verification-games/src/verification_games/flux_stage.py:285, in build_staged_flux_dataset(catalog, species, scenarios, sectors, university_abbr, input_chunks, output_chunks, fill_value)
-    278 records = find_flux_records(
-    279     catalog,
-    280     species=species,
-    281     scenarios=scenarios,
-    282     university_abbr=university_abbr,
-    283 )
-    284 inputs = open_flux_inputs(records, input_chunks=input_chunks)
---> 285 ds = stack_flux_sources(inputs, sectors=sectors, output_chunks=output_chunks, fill_value=fill_value)
-    286 return ds, records
-
-File /group/chem/acrg/verification_games_round_2/verification-games/src/verification_games/flux_stage.py:222, in stack_flux_sources(inputs, sectors, output_chunks, fill_value)
-    220 label = source_label(item.species, item.games_scenario, sector)
-    221 print(f"Stacking source {label}")
---> 222 da = convert_flux_units(_flux_data_array(item.dataset, sector), target_units=DEFAULT_FLUX_UNITS)
-    223 if da.dtype != np.dtype("float32"):
-    224     da = da.astype(np.float32)
-
-File /group/chem/acrg/verification_games_round_2/verification-games/src/verification_games/flux_stage.py:176, in _flux_data_array(ds, sector)
-    173 if data.dims == expected_dims:
-    174     return data
---> 176 expected_shape = tuple(_coord_or_dim_size(ds, dim) for dim in expected_dims)
-    177 if data.ndim == FLUX_NDIMS and data.shape == expected_shape:
-    178     return xr.DataArray(
-    179         data.data,
-    180         dims=expected_dims,
-   (...)    183         name=data.name,
-    184     )
-
-File /group/chem/acrg/verification_games_round_2/verification-games/src/verification_games/flux_stage.py:176, in <genexpr>(.0)
-    173 if data.dims == expected_dims:
-    174     return data
---> 176 expected_shape = tuple(_coord_or_dim_size(ds, dim) for dim in expected_dims)
-    177 if data.ndim == FLUX_NDIMS and data.shape == expected_shape:
-    178     return xr.DataArray(
-    179         data.data,
-    180         dims=expected_dims,
-   (...)    183         name=data.name,
-    184     )
-
-File /group/chem/acrg/verification_games_round_2/verification-games/src/verification_games/flux_stage.py:195, in _coord_or_dim_size(ds, dim)
-    193 if dim in ds.coords:
-    194     return int(ds.coords[dim].size)
---> 195 return int(ds.sizes[dim])
-
-File /group/chem/acrg/verification_games_round_2/verification-games/.venv/lib/python3.12/site-packages/xarray/core/utils.py:506, in Frozen.__getitem__(self, key)
-    505 def __getitem__(self, key: K) -> V:
---> 506     return self.mapping[key]
-
-KeyError: 'lat'
-#+end_example
-:END:
 *** Store in =ogcat=
 
 #+begin_src jupyter-python
@@ -376,7 +234,12 @@ if REGISTER_STAGED_ZARR:
     if not staged_path.exists():
         raise FileNotFoundError(staged_path)
     if input_records is None:
-        input_records = find_flux_records(games_cat)
+        input_records = find_flux_records(
+            games_cat,
+            processing_stage=SOURCE_FLUX_PROCESSING_STAGE,
+            version=SOURCE_FLUX_VERSION,
+            data_format=SOURCE_FLUX_FORMAT,
+        )
     staged_record = register_staged_flux_zarr(games_cat, staged_path, input_records)
     print(staged_record)
 #+end_src
@@ -429,7 +292,7 @@ if RUN_SMOKE:
 :CUSTOM_ID: smoke-comparison
 :END:
 This compares the staged, already-filled Zarr with a direct lazy stack
-of the original NetCDF flux records where NaNs are filled by the
+of the scenario-level Zarr flux records where NaNs are filled by the
 forward-model helper.
 
 #+begin_src jupyter-python
@@ -447,7 +310,13 @@ if RUN_SMOKE_COMPARISON:
         fillna_zero=False,
     )
 
-    raw_flux_ds, _ = build_staged_flux_dataset(games_cat, fill_value=None)
+    raw_flux_ds, _ = build_staged_flux_dataset(
+        games_cat,
+        processing_stage=SOURCE_FLUX_PROCESSING_STAGE,
+        version=SOURCE_FLUX_VERSION,
+        data_format=SOURCE_FLUX_FORMAT,
+        fill_value=None,
+    )
     raw_expr = compute_fp_x_flux(
         fp,
         raw_flux_ds["flux"],

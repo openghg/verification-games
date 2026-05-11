@@ -11,6 +11,7 @@ from verification_games import flux_stage
 from verification_games.flux_stage import (
     FluxDatasetInput,
     _flux_data_array,
+    _is_zarr_record,
     convert_flux_units,
     source_label,
     stack_flux_sources,
@@ -64,6 +65,17 @@ def test_convert_flux_units_uses_cf_registry() -> None:
     assert converted.attrs["units"] == "mol m-2 s-1"
     assert converted.attrs["source_units_before_staging"] == "micromol m-2 s-1"
     assert np.isclose(float(converted.values[0]), 1e-6)
+
+
+def test_is_zarr_record_detects_directory_records() -> None:
+    """Scenario Zarr flux records should use xarray.open_zarr."""
+
+    class Record:
+        def __init__(self) -> None:
+            self.user_metadata = {"format": "zarr"}
+            self.derived_metadata = {"reader_hint": "xarray.open_zarr"}
+
+    assert _is_zarr_record(Record(), "/tmp/PARIS_ATEN_co2_fluxes_v2.zarr")
 
 
 def test_flux_data_array_repairs_duplicate_dimension_names() -> None:

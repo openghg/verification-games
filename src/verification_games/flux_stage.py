@@ -72,25 +72,35 @@ def open_games_catalog(catalog_path: str | Path = DEFAULT_CATALOG_PATH):
     return Catalog.open(Path(catalog_path))
 
 
-def find_flux_records(
+def find_flux_records(  # noqa: PLR0913
     catalog,
     *,
     species: Sequence[str] = DEFAULT_SPECIES,
     scenarios: Sequence[str] = DEFAULT_SCENARIOS,
     university_abbr: str = "UOB",
     record_type: str = "verification_games_flux",
+    processing_stage: str | None = None,
+    version: str | None = None,
+    data_format: str | None = None,
 ) -> list:
-    """Find the 12 source NetCDF records used to build the staged flux Zarr."""
+    """Find the 12 source records used to build the staged flux Zarr."""
     records = []
     for sp in species:
         for scenario in scenarios:
+            where = {
+                "record_type": record_type,
+                "species": sp,
+                "games_scenario": scenario,
+                "university_abbr": university_abbr,
+            }
+            if processing_stage is not None:
+                where["processing_stage"] = processing_stage
+            if version is not None:
+                where["version"] = version
+            if data_format is not None:
+                where["format"] = data_format
             result = catalog.search(
-                where={
-                    "record_type": record_type,
-                    "species": sp,
-                    "games_scenario": scenario,
-                    "university_abbr": university_abbr,
-                },
+                where=where,
                 as_record_set=True,
             )
             if len(result) != 1:
@@ -116,7 +126,10 @@ def open_flux_inputs(
         scenario = str(record.user_metadata["games_scenario"]).upper()
         path = str(record.locator.value)
         print(f"Opening flux record {record.id}: {species} {scenario} -> {path}")
-        ds = xr.open_dataset(path, chunks=chunks)
+        if _is_zarr_record(record, path):
+            ds = xr.open_zarr(path, chunks=chunks)
+        else:
+            ds = xr.open_dataset(path, chunks=chunks)
         inputs.append(
             FluxDatasetInput(
                 species=species,
@@ -128,6 +141,14 @@ def open_flux_inputs(
         )
 
     return inputs
+
+
+def _is_zarr_record(record, path: str) -> bool:
+    """Return whether a flux record should be opened as Zarr."""
+    derived_metadata = getattr(record, "derived_metadata", {}) or {}
+    metadata_format = str(record.user_metadata.get("format", "")).lower()
+    reader_hint = str(derived_metadata.get("reader_hint", "")).lower()
+    return path.endswith(".zarr") or metadata_format == "zarr" or reader_hint == "xarray.open_zarr"
 
 
 def _is_target_flux_units(units: str, target_units: str = DEFAULT_FLUX_UNITS) -> bool:
@@ -318,6 +339,9 @@ def build_staged_flux_dataset(  # noqa: PLR0913
     scenarios: Sequence[str] = DEFAULT_SCENARIOS,
     sectors: Sequence[str] = DEFAULT_SECTORS,
     university_abbr: str = "UOB",
+    processing_stage: str | None = None,
+    version: str | None = None,
+    data_format: str | None = None,
     input_chunks: Mapping[str, int] | None = None,
     output_chunks: Mapping[str, int] | None = None,
     fill_value: float | None = 0.0,
@@ -328,6 +352,9 @@ def build_staged_flux_dataset(  # noqa: PLR0913
         species=species,
         scenarios=scenarios,
         university_abbr=university_abbr,
+        processing_stage=processing_stage,
+        version=version,
+        data_format=data_format,
     )
     inputs = open_flux_inputs(records, input_chunks=input_chunks)
     ds = stack_flux_sources(inputs, sectors=sectors, output_chunks=output_chunks, fill_value=fill_value)
@@ -393,13 +420,23 @@ def stage_flux_zarr(  # noqa: PLR0913
     *,
     temp_parent: str | Path | None = None,
     overwrite: bool = False,
+    processing_stage: str | None = None,
+    version: str | None = None,
+    data_format: str | None = None,
     output_chunks: Mapping[str, int] | None = None,
     fill_value: float | None = 0.0,
     compressor=DEFAULT_ZARR_COMPRESSOR,
     dry_run: bool = False,
 ) -> tuple[Path, list]:
     """Build and write the all-source staged flux Zarr."""
-    ds, records = build_staged_flux_dataset(catalog, output_chunks=output_chunks, fill_value=fill_value)
+    ds, records = build_staged_flux_dataset(
+        catalog,
+        processing_stage=processing_stage,
+        version=version,
+        data_format=data_format,
+        output_chunks=output_chunks,
+        fill_value=fill_value,
+    )
     if dry_run:
         print("Dry run: built lazy staged flux dataset; skipping to_zarr write.")
         print(summarize_staged_flux_dataset(ds))
