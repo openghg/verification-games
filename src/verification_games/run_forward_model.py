@@ -96,7 +96,8 @@ def month_windows(
 
 def open_staged_flux(zarr_path: str | Path, *, chunks: dict[str, int] | None = None) -> xr.DataArray:
     """Open the staged flux Zarr and return its ``flux`` DataArray."""
-    ds = xr.open_zarr(Path(zarr_path), chunks=chunks)
+    open_kwargs = {} if chunks is None else {"chunks": chunks}
+    ds = xr.open_zarr(Path(zarr_path), **open_kwargs)
     if "flux" not in ds:
         raise ValueError(f"Staged flux Zarr is missing variable 'flux': {zarr_path}")
     flux = ds["flux"]
@@ -189,6 +190,37 @@ def _flux_slice_for_footprint(flux: xr.DataArray, fp: xr.Dataset) -> xr.DataArra
     return flux.sel(time=slice(start, end))
 
 
+def _coordinate_values_match(left: xr.DataArray, right: xr.DataArray) -> bool:
+    """Return whether two 1D coordinates have the same values for alignment."""
+    if left.shape != right.shape:
+        return False
+
+    left_values = left.values
+    right_values = right.values
+    if np.issubdtype(left_values.dtype, np.number) and np.issubdtype(right_values.dtype, np.number):
+        return bool(np.allclose(left_values, right_values, rtol=1e-6, atol=1e-6, equal_nan=True))
+    return bool(np.array_equal(left_values, right_values))
+
+
+def _harmonize_spatial_coords(flux: xr.DataArray, fp: xr.Dataset) -> xr.DataArray:
+    """Assign footprint spatial coordinates to flux when grids match numerically."""
+    updates: dict[str, xr.DataArray] = {}
+    for dim in ("lat", "lon"):
+        if dim not in flux.coords or dim not in fp.coords:
+            continue
+        if flux.coords[dim].identical(fp.coords[dim]):
+            continue
+        if not _coordinate_values_match(flux.coords[dim], fp.coords[dim]):
+            raise ValueError(
+                f"Flux and footprint {dim!r} coordinates do not match; regrid before forward modelling."
+            )
+        updates[dim] = fp.coords[dim]
+
+    if not updates:
+        return flux
+    return flux.assign_coords(updates)
+
+
 def compute_fp_x_flux(
     fp: xr.Dataset,
     flux: xr.DataArray,
@@ -199,6 +231,7 @@ def compute_fp_x_flux(
 ) -> xr.DataArray:
     """Build the lazy ``(footprint * flux).sum(lat, lon)`` expression."""
     flux_slice = _flux_slice_for_footprint(flux, fp)
+    flux_slice = _harmonize_spatial_coords(flux_slice, fp)
     lat_chunk = int(fp.sizes["lat"])
     lon_chunk = int(fp.sizes["lon"])
     result = fp_x_flux_sum_space_numba(

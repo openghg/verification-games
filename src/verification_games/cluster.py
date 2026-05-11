@@ -8,7 +8,10 @@ from typing import Any
 
 from dask.distributed import Client
 from dask_jobqueue import SLURMCluster
-from forward_model_tests.mod_obs_functions import warm_numba_block_kernel_with_source_worker
+from forward_model_tests.mod_obs_functions import (
+    warm_numba_block_kernel_with_source_worker,
+    warm_numba_block_kernel_worker,
+)
 
 
 THREAD_LIMIT_PROLOGUE = [
@@ -85,6 +88,13 @@ def wait_for_workers(client, n_workers: int, timeout_s: int = 600) -> None:
     client.wait_for_workers(n_workers, timeout=timeout_s)
 
 
+def _warm_all_forward_model_numba_kernels() -> str:
+    """Compile source and no-source forward-model Numba kernels on one worker."""
+    warm_numba_block_kernel_worker()
+    warm_numba_block_kernel_with_source_worker()
+    return "ok"
+
+
 def warm_forward_model_numba(client) -> dict[str, str]:
     """Compile the forward-model Numba kernels on every connected worker."""
-    return client.run(warm_numba_block_kernel_with_source_worker)
+    return client.run(_warm_all_forward_model_numba_kernels)
