@@ -9,12 +9,12 @@ from pathlib import Path
 def bootstrap_src() -> Path:
     """Add the repository's ``src`` directory to ``sys.path`` if needed.
 
-    Returns
+    Returns:
     -------
     Path
         The absolute path to the ``src`` directory.
 
-    Notes
+    Notes:
     -----
     This is most useful for ad hoc notebooks or when using a kernel from a
     different environment. For longer-lived work, using ``pip install -e .`` or
