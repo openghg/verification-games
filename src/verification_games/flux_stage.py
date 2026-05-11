@@ -27,6 +27,7 @@ DEFAULT_FLUX_CHUNKS = {"time": 24, "lat": 293, "lon": 391, "source": 4}
 DEFAULT_STAGE_KEYWORDS = ("flux_stage", "filled_nan_zero", "forward_model_input")
 DEFAULT_FLUX_UNITS = "mol m-2 s-1"
 DEFAULT_ZARR_COMPRESSOR = Blosc(cname="lz4", clevel=5, shuffle=Blosc.SHUFFLE)
+FLUX_NDIMS = 3
 STAGED_FLUX_MODIFICATIONS = (
     "Stacked PARIS species/scenario/sector fluxes into a single source dimension, "
     "converted flux variables to mol m-2 s-1 where necessary, filled flux NaNs "
@@ -165,6 +166,29 @@ def convert_flux_units(
     return out
 
 
+def _flux_data_array(ds: xr.Dataset, sector: str) -> xr.DataArray:
+    """Return a flux DataArray with canonical ``time, lat, lon`` dimensions."""
+    data = ds[sector]
+    expected_dims = ("time", "lat", "lon")
+    if data.dims == expected_dims:
+        return data
+
+    expected_shape = tuple(ds.sizes[dim] for dim in expected_dims if dim in ds.sizes)
+    if data.ndim == FLUX_NDIMS and data.shape == expected_shape:
+        return xr.DataArray(
+            data.data,
+            dims=expected_dims,
+            coords={dim: ds.coords[dim] for dim in expected_dims if dim in ds.coords},
+            attrs=dict(data.attrs),
+            name=data.name,
+        )
+
+    raise ValueError(
+        f"Flux variable {sector!r} has unexpected dims/shape: "
+        f"dims={data.dims!r}, shape={data.shape!r}; expected {expected_dims} / {expected_shape}."
+    )
+
+
 def stack_flux_sources(
     inputs: Sequence[FluxDatasetInput],
     *,
@@ -189,7 +213,9 @@ def stack_flux_sources(
                 raise KeyError(f"{item.path} is missing expected sector variable {sector!r}")
             label = source_label(item.species, item.games_scenario, sector)
             print(f"Stacking source {label}")
-            da = convert_flux_units(item.dataset[sector], target_units=DEFAULT_FLUX_UNITS).astype(np.float32)
+            da = convert_flux_units(_flux_data_array(item.dataset, sector), target_units=DEFAULT_FLUX_UNITS)
+            if da.dtype != np.dtype("float32"):
+                da = da.astype(np.float32)
             if fill_value is not None:
                 da = da.fillna(fill_value)
             arrays.append(da)

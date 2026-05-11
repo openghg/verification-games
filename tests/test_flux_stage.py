@@ -7,7 +7,13 @@ import sys
 import numpy as np
 import xarray as xr
 
-from verification_games.flux_stage import FluxDatasetInput, convert_flux_units, source_label, stack_flux_sources
+from verification_games.flux_stage import (
+    FluxDatasetInput,
+    _flux_data_array,
+    convert_flux_units,
+    source_label,
+    stack_flux_sources,
+)
 from verification_games.units import cf_ureg
 
 EXPECTED_O2_ATEN_GPP_MEAN = 11.0
@@ -56,6 +62,24 @@ def test_convert_flux_units_uses_cf_registry() -> None:
     assert converted.attrs["units"] == "mol m-2 s-1"
     assert converted.attrs["source_units_before_staging"] == "micromol m-2 s-1"
     assert np.isclose(float(converted.values[0]), 1e-6)
+
+
+def test_flux_data_array_repairs_duplicate_dimension_names() -> None:
+    """Malformed HDF5 dimension scales can be normalised from shape and coords."""
+    ds = _flux_dataset()
+    broken = xr.DataArray(
+        ds["GPP"].data,
+        dims=("time", "time", "time"),
+        attrs=dict(ds["GPP"].attrs),
+        name="GPP",
+    )
+    ds["GPP"] = broken
+
+    repaired = _flux_data_array(ds, "GPP")
+
+    assert repaired.dims == ("time", "lat", "lon")
+    assert repaired.shape == ds["GPP"].shape
+    assert repaired.attrs["units"] == "mol m-2 s-1"
 
 
 def test_stack_flux_sources_stacks_metadata_and_fills_nans() -> None:

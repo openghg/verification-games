@@ -1152,3 +1152,405 @@ There is a ~6-8x difference in the size of the files based on the chunks, but th
 For ATEN/BASE, chunks are (24, 293, 391): each compressed chunk is a full spatial map over 24 times. That mixes land, ocean, ice, coastline, point sources, NaNs, zeros, and nonzero fluxes into every chunk.
 
 For DFIN/HFRA/HGER/PTEN, chunks are (1293, 42, 56): each chunk is a smaller spatial tile over a much longer time period. That can compress much better because many tiles may be mostly ocean, mostly land, mostly NaN, mostly zero, or smoothly varying through time. Gzip+shuffle works per HDF5 chunk, and it cannot use redundancy across chunk boundaries, so chunk shape matters a lot.
+
+** Diagnose O2 dimension metadata
+
+The staged Zarr write failed when stacking =o2_ATEN_GPP=. The error was raised by
+=DataArray.astype= before any real read of the array, with xarray reporting a
+variable whose dimensions were =["time", "time", "time"]=. That suggests a
+metadata/dimension-scale problem rather than a slow compute problem. These cells
+compare the netCDF/HDF5 dimension metadata and xarray's decoded view.
+
+*** Sanity check of data modification times
+
+#+begin_src jupyter-python
+!ls -lhst {games_flux_dir}
+#+end_src
+
+#+RESULTS:
+#+begin_example
+total 52G
+5.5G -rw-rw-r-- 1 bm13805 acrg 5.5G May  8 10:21 PARIS_PTEN_co2.nc
+5.5G -rw-rw-r-- 1 bm13805 acrg 5.5G May  8 10:17 PARIS_HGER_co2.nc
+5.5G -rw-rw-r-- 1 bm13805 acrg 5.5G May  8 10:12 PARIS_HFRA_co2.nc
+5.5G -rw-rw-r-- 1 bm13805 acrg 5.5G May  8 10:07 PARIS_DFIN_co2.nc
+5.5G -rw-rw-r-- 1 bm13805 acrg 5.5G May  8 10:02 PARIS_BASE_co2.nc
+5.5G -rw-rw-r-- 1 bm13805 acrg 5.5G May  8 09:57 PARIS_ATEN_co2.nc
+1.1G -rw-rw-r-- 1 bm13805 acrg 1.1G May  7 23:16 PARIS_PTEN_o2.nc
+1.1G -rw-rw-r-- 1 bm13805 acrg 1.1G May  7 23:13 PARIS_HGER_o2.nc
+1.1G -rw-rw-r-- 1 bm13805 acrg 1.1G May  7 23:10 PARIS_HFRA_o2.nc
+1.1G -rw-rw-r-- 1 bm13805 acrg 1.1G May  7 23:07 PARIS_DFIN_o2.nc
+6.1G -rw-rw-r-- 1 bm13805 acrg 6.1G May  7 21:39 PARIS_ATEN_o2.nc
+8.6G -rw-rw-r-- 1 bm13805 acrg 8.6G May  7 21:12 PARIS_BASE_o2.nc
+#+end_example
+
+*** NetCDF header for O2 and CO2 ATEN
+
+#+begin_src jupyter-python
+aten_o2_path = games_flux_dir / "PARIS_ATEN_o2.nc"
+aten_co2_path = games_flux_dir / "PARIS_ATEN_co2.nc"
+
+print(aten_o2_path)
+print(aten_co2_path)
+#+end_src
+
+#+RESULTS:
+: /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_ATEN_o2.nc
+: /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_ATEN_co2.nc
+
+#+begin_src jupyter-python
+%%bash -s "$aten_o2_path" "$aten_co2_path"
+module load openmpi netcdf-c hdf5 2>/dev/null
+
+for f in "$1" "$2"; do
+  echo
+  echo "### $(basename "$f")"
+  ncdump -hs "$f" | sed -n '1,90p'
+  echo
+  echo "--- variable declarations ---"
+  ncdump -h "$f" | grep -E '^[[:space:]]+(float|double).*\\((.*)\\)|^[[:space:]]+(time|lat|lon) ='
+done
+#+end_src
+
+#+RESULTS:
+:RESULTS:
+#+begin_example
+
+### PARIS_ATEN_o2.ncnetcdf PARIS_ATEN_o2 {
+dimensions:
+	time = 9048 ;
+	time = 9048 ;
+	time = 9048 ;
+variables:
+	double lat(time) ;
+		lat:_FillValue = NaN ;
+		string lat:long_name = "latitude" ;
+		string lat:standard_name = "latitude" ;
+		string lat:units = "degrees_north" ;
+		lat:_Storage = "contiguous" ;
+		lat:_Endianness = "little" ;
+	double lon(time) ;
+		lon:_FillValue = NaN ;
+		string lon:long_name = "longitude" ;
+		string lon:standard_name = "longitude" ;
+		string lon:units = "degrees_east" ;
+		lon:_Storage = "contiguous" ;
+		lon:_Endianness = "little" ;
+	double time(time) ;
+		time:_FillValue = NaN ;
+		string time:units = "hours since 2000-01-01" ;
+		string time:calendar = "proleptic_gregorian" ;
+		time:_Storage = "contiguous" ;
+		time:_Endianness = "little" ;
+	float GPP(time, time, time) ;
+		GPP:_FillValue = NaNf ;
+		string GPP:long_name = "GPP O2 flux for PARIS ATEN" ;
+		string GPP:units = "mol m-2 s-1" ;
+		string GPP:species = "o2" ;
+		string GPP:sector = "GPP" ;
+		string GPP:source_variable = "flux" ;
+		string GPP:sign_convention = "positive flux is to atmosphere" ;
+		string GPP:fallback_source = "sib4_o2_gpp" ;
+		string GPP:fallback_source_record_id = "40" ;
+		string GPP:fallback_source_path = "/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/sib4/o2_GPP_EUROPE_biosphere-fallback-gpp_202012-202112.nc" ;
+		string GPP:primary_source = "paris_aten" ;
+		string GPP:primary_source_record_id = "47" ;
+		string GPP:primary_source_path = "/group/chem/acrg/verification_games_round_2/verification-games-fluxes/data/raw/PARIS_ATEN_O2.nc" ;
+		GPP:_Storage = "chunked" ;GPP:_ChunkSizes = 24, 293, 391 ;
+		GPP:_Shuffle = "true" ;
+		GPP:_DeflateLevel = 4 ;
+		GPP:_Endianness = "little" ;
+	float TER(time, time, time) ;
+		TER:_FillValue = NaNf ;
+		string TER:long_name = "TER O2 flux for PARIS ATEN" ;
+		string TER:units = "mol m-2 s-1" ;
+		string TER:species = "o2" ;
+		string TER:sector = "TER" ;
+		string TER:source_variable = "flux" ;
+		string TER:sign_convention = "positive flux is to atmosphere" ;
+		string TER:fallback_source = "sib4_o2_ter" ;
+		string TER:fallback_source_record_id = "41" ;
+		string TER:fallback_source_path = "/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/sib4/o2_TER_EUROPE_biosphere-fallback-ter_202012-202112.nc" ;
+		string TER:primary_source = "paris_aten" ;
+		string TER:primary_source_record_id = "47" ;
+		string TER:primary_source_path = "/group/chem/acrg/verification_games_round_2/verification-games-fluxes/data/raw/PARIS_ATEN_O2.nc" ;
+		TER:_Storage = "chunked" ;
+		TER:_ChunkSizes = 24, 293, 391 ;
+		TER:_Shuffle = "true" ;
+		TER:_DeflateLevel = 4 ;
+		TER:_Endianness = "little" ;
+	float FF(time, time, time) ;
+		FF:_FillValue = NaNf ;
+		string FF:long_name = "FF O2 flux for PARIS ATEN" ;
+		string FF:units = "mol m-2 s-1" ;
+		string FF:species = "o2" ;
+		string FF:sector = "FF" ;
+		string FF:source_variable = "flux" ;
+		string FF:sign_convention = "positive flux is to atmosphere" ;
+		string FF:fallback_source = "gridfed_total_o2" ;
+		string FF:fallback_source_record_id = "36" ;
+		string FF:fallback_source_path = "/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/GridFED/v2024.0/o2_TOTAL_EUROPE_fossil-ff-monthly_2020-2021.nc" ;
+		string FF:primary_source = "paris_aten" ;
+		string FF:primary_source_record_id = "47" ;
+		string FF:primary_source_path = "/group/chem/acrg/verification_games_round_2/verification-games-fluxes/data/raw/PARIS_ATEN_O2.nc" ;
+		FF:_Storage = "chunked" ;
+		FF:_ChunkSizes = 24, 293, 391 ;
+		FF:_Shuffle = "true" ;
+		FF:_DeflateLevel = 4 ;
+		FF:_Endianness = "little" ;
+	float ocean(time, time, time) ;
+		ocean:_FillValue = NaNf ;
+		string ocean:long_name = "ocean O2 flux for PARIS ATEN" ;
+		string ocean:units = "mol m-2 s-1" ;
+		string ocean:species = "o2" ;
+		string ocean:sector = "ocean" ;
+		string ocean:source_variable = "flux" ;
+
+--- variable declarations ---
+	time = 9048 ;
+	time = 9048 ;
+	time = 9048 ;
+
+### PARIS_ATEN_co2.nc
+netcdf PARIS_ATEN_co2 {
+dimensions:
+	lat = 293 ;
+	lon = 391 ;
+	time = 9048 ;
+variables:
+	double lat(lat) ;
+		lat:_FillValue = NaN ;
+		string lat:long_name = "latitude" ;
+		string lat:standard_name = "latitude" ;
+		string lat:units = "degrees_north" ;
+		lat:_Storage = "contiguous" ;
+		lat:_Endianness = "little" ;
+	double lon(lon) ;
+		lon:_FillValue = NaN ;
+		string lon:long_name = "longitude" ;
+		string lon:standard_name = "longitude" ;
+		string lon:units = "degrees_east" ;
+		lon:_Storage = "contiguous" ;
+		lon:_Endianness = "little" ;
+	double time(time) ;
+		time:_FillValue = NaN ;
+		string time:units = "hours since 2000-01-01" ;
+		string time:calendar = "proleptic_gregorian" ;
+		time:_Storage = "contiguous" ;
+		time:_Endianness = "little" ;
+	float GPP(time, lat, lon) ;
+		GPP:_FillValue = NaNf ;
+		string GPP:long_name = "GPP CO2 flux for PARIS ATEN" ;
+		string GPP:units = "mol m-2 s-1" ;
+		string GPP:species = "co2" ;
+		string GPP:sector = "GPP" ;
+		string GPP:source_variable = "flux" ;
+		string GPP:sign_convention = "positive flux is to atmosphere" ;
+		string GPP:fallback_source = "sib4_co2_gpp" ;
+		string GPP:primary_source = "paris_aten" ;
+		string GPP:primary_source_record_id = "46" ;
+		string GPP:primary_source_path = "/group/chem/acrg/verification_games_round_2/verification-games-fluxes/data/raw/PARIS_ATEN.nc" ;
+		string GPP:fallback_source_record_id = "38" ;
+		string GPP:fallback_source_path = "/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/sib4/co2_GPP_EUROPE_biosphere-fallback-gpp_202012-202112.nc" ;
+		GPP:_Storage = "chunked" ;
+		GPP:_ChunkSizes = 24, 293, 391 ;
+		GPP:_Shuffle = "true" ;
+		GPP:_DeflateLevel = 4 ;
+		GPP:_Endianness = "little" ;
+	float TER(time, lat, lon) ;
+		TER:_FillValue = NaNf ;
+		string TER:long_name = "TER CO2 flux for PARIS ATEN" ;
+		string TER:units = "mol m-2 s-1" ;
+		string TER:species = "co2" ;
+		string TER:sector = "TER" ;
+		string TER:source_variable = "flux" ;
+		string TER:sign_convention = "positive flux is to atmosphere" ;
+		string TER:fallback_source = "sib4_co2_ter" ;
+		string TER:primary_source = "paris_aten" ;
+		string TER:primary_source_record_id = "46" ;
+		string TER:primary_source_path = "/group/chem/acrg/verification_games_round_2/verification-games-fluxes/data/raw/PARIS_ATEN.nc" ;string TER:fallback_source_record_id = "39" ;
+		string TER:fallback_source_path = "/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/sib4/co2_TER_EUROPE_biosphere-fallback-ter_202012-202112.nc" ;
+		TER:_Storage = "chunked" ;
+		TER:_ChunkSizes = 24, 293, 391 ;
+		TER:_Shuffle = "true" ;
+		TER:_DeflateLevel = 4 ;
+		TER:_Endianness = "little" ;
+	float FF(time, lat, lon) ;
+		FF:_FillValue = NaNf ;
+		string FF:long_name = "FF CO2 flux for PARIS ATEN" ;
+		string FF:units = "mol m-2 s-1" ;
+		string FF:species = "co2" ;
+		string FF:sector = "FF" ;
+		string FF:source_variable = "flux" ;
+		string FF:sign_convention = "positive flux is to atmosphere" ;
+		string FF:fallback_source = "gridfed_total_co2" ;
+		string FF:primary_source = "paris_aten" ;
+		string FF:primary_source_record_id = "46" ;
+		string FF:primary_source_path = "/group/chem/acrg/verification_games_round_2/verification-games-fluxes/data/raw/PARIS_ATEN.nc" ;
+		string FF:fallback_source_record_id = "35" ;
+		string FF:fallback_source_path = "/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/GridFED/v2024.0/co2_TOTAL_EUROPE_fossil-ff-monthly_2020-2021.nc" ;
+		FF:_Storage = "chunked" ;
+		FF:_ChunkSizes = 24, 293, 391 ;
+		FF:_Shuffle = "true" ;
+		FF:_DeflateLevel = 4 ;
+		FF:_Endianness = "little" ;
+	float ocean(time, lat, lon) ;
+		ocean:_FillValue = NaNf ;
+		string ocean:long_name = "ocean CO2 flux for PARIS ATEN" ;
+		string ocean:units = "mol m-2 s-1" ;
+		string ocean:species = "co2" ;
+		string ocean:sector = "ocean" ;
+		string ocean:source_variable = "flux" ;
+
+--- variable declarations ---
+	lat = 293 ;
+	lon = 391 ;
+	time = 9048 ;
+#+end_example
+:END:
+
+*** HDF5 dimension scales
+
+#+begin_src jupyter-python
+import h5py
+import pandas as pd
+
+
+def h5_dimension_scale_summary(paths, variables=("GPP", "TER", "FF", "ocean")):
+    rows = []
+    for path in paths:
+        with h5py.File(path, "r") as h5:
+            for var in variables:
+                dset = h5[var]
+                for axis, dim in enumerate(dset.dims):
+                    scale_names = list(dim.keys())
+                    scale_paths = []
+                    scale_shapes = []
+                    for scale_name in scale_names:
+                        scale = dim[scale_name]
+                        scale_paths.append(scale.name)
+                        scale_shapes.append(scale.shape)
+                    rows.append(
+                        {
+                            "file": Path(path).name,
+                            "var": var,
+                            "axis": axis,
+                            "shape": dset.shape,
+                            "chunks": dset.chunks,
+                            "dim_label": dim.label,
+                            "scale_names": scale_names,
+                            "scale_paths": scale_paths,
+                            "scale_shapes": scale_shapes,
+                        }
+                    )
+    return pd.DataFrame(rows)
+
+
+scale_df = h5_dimension_scale_summary([aten_o2_path, aten_co2_path])
+print(scale_df.to_string())
+#+end_src
+
+*** Python netCDF4 dimensions
+
+#+begin_src jupyter-python
+from netCDF4 import Dataset
+
+
+def netcdf4_var_dim_summary(paths, variables=("GPP", "TER", "FF", "ocean")):
+    rows = []
+    for path in paths:
+        with Dataset(path) as nc:
+            for var in variables:
+                v = nc.variables[var]
+                rows.append(
+                    {
+                        "file": Path(path).name,
+                        "var": var,
+                        "dimensions": v.dimensions,
+                        "shape": v.shape,
+                        "dtype": str(v.dtype),
+                        "units": getattr(v, "units", None),
+                    }
+                )
+    return pd.DataFrame(rows)
+
+
+nc4_dim_df = netcdf4_var_dim_summary([aten_o2_path, aten_co2_path])
+print(nc4_dim_df.to_string(index=False))
+#+end_src
+
+*** Xarray decoded dimensions by engine
+
+#+begin_src jupyter-python
+def xarray_dim_summary(paths, variables=("GPP", "TER", "FF", "ocean")):
+    rows = []
+    open_attempts = [
+        ("default", {}),
+        ("netcdf4", {"engine": "netcdf4"}),
+        ("h5netcdf", {"engine": "h5netcdf"}),
+        ("h5netcdf_phony_sort", {"engine": "h5netcdf", "phony_dims": "sort"}),
+        ("h5netcdf_decode_false", {"engine": "h5netcdf", "decode_cf": False}),
+    ]
+    for path in paths:
+        for label, kwargs in open_attempts:
+            try:
+                ds = xr.open_dataset(path, chunks={"time": 24, "lat": 293, "lon": 391}, **kwargs)
+            except Exception as exc:
+                rows.append({"file": Path(path).name, "engine": label, "open_error": repr(exc)})
+                continue
+
+            for var in variables:
+                da = ds[var]
+                astype_ok = True
+                astype_error = None
+                try:
+                    _ = da.astype("float32")
+                except Exception as exc:
+                    astype_ok = False
+                    astype_error = repr(exc)
+                rows.append(
+                    {
+                        "file": Path(path).name,
+                        "engine": label,
+                        "var": var,
+                        "dims": da.dims,
+                        "shape": da.shape,
+                        "dtype": str(da.dtype),
+                        "units": da.attrs.get("units"),
+                        "chunks": getattr(da.data, "chunks", None),
+                        "astype_ok": astype_ok,
+                        "astype_error": astype_error,
+                    }
+                )
+            ds.close()
+    return pd.DataFrame(rows)
+
+
+xr_dim_df = xarray_dim_summary([aten_o2_path, aten_co2_path])
+print(xr_dim_df.to_string())
+#+end_src
+
+*** Test staging's dimension repair path
+
+#+begin_src jupyter-python
+from verification_games.flux_stage import _flux_data_array, convert_flux_units
+
+
+ds_o2 = xr.open_dataset(aten_o2_path, chunks={"time": 24, "lat": 293, "lon": 391})
+for var in ["GPP", "TER", "FF", "ocean"]:
+    raw = ds_o2[var]
+    repaired = _flux_data_array(ds_o2, var)
+    converted = convert_flux_units(repaired)
+    print(
+        var,
+        "raw dims:", raw.dims,
+        "repaired dims:", repaired.dims,
+        "dtype:", repaired.dtype,
+        "converted units:", converted.attrs.get("units"),
+    )
+    try:
+        cast = converted.astype("float32")
+        print("  astype ok:", cast.dims, cast.dtype)
+    except Exception as exc:
+        print("  astype error:", repr(exc))
+#+end_src
