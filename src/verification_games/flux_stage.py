@@ -286,6 +286,26 @@ def build_staged_flux_dataset(  # noqa: PLR0913
     return ds, records
 
 
+def summarize_staged_flux_dataset(ds: xr.Dataset) -> dict[str, object]:
+    """Return a lightweight summary of the lazy staged flux dataset."""
+    if "flux" not in ds:
+        raise ValueError("Staged flux dataset must contain variable 'flux'.")
+    flux = ds["flux"]
+    graph = flux.__dask_graph__() if hasattr(flux.data, "__dask_graph__") else None
+    return {
+        "dims": tuple(flux.dims),
+        "sizes": dict(flux.sizes),
+        "dtype": str(flux.dtype),
+        "units": flux.attrs.get("units"),
+        "chunks": {dim: tuple(int(c) for c in chunks) for dim, chunks in flux.chunksizes.items()},
+        "source_count": int(flux.sizes.get("source", 0)),
+        "sources": [str(value) for value in flux["source"].values],
+        "dask_tasks": None if graph is None else len(graph),
+        "history_present": "history" in ds.attrs,
+        "nan_policy": ds.attrs.get("nan_policy"),
+    }
+
+
 def write_staged_flux_zarr(  # noqa: PLR0913
     ds: xr.Dataset,
     target_path: str | Path,
@@ -328,9 +348,15 @@ def stage_flux_zarr(  # noqa: PLR0913
     output_chunks: Mapping[str, int] | None = None,
     fill_value: float | None = 0.0,
     compressor=DEFAULT_ZARR_COMPRESSOR,
+    dry_run: bool = False,
 ) -> tuple[Path, list]:
     """Build and write the all-source staged flux Zarr."""
     ds, records = build_staged_flux_dataset(catalog, output_chunks=output_chunks, fill_value=fill_value)
+    if dry_run:
+        print("Dry run: built lazy staged flux dataset; skipping to_zarr write.")
+        print(summarize_staged_flux_dataset(ds))
+        return Path(target_path).expanduser(), records
+
     path = write_staged_flux_zarr(
         ds,
         target_path,

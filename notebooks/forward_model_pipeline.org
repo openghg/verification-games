@@ -194,14 +194,18 @@ print(results2.to_dataframe(["id", "species", "games_scenario"]))
 #+end_example
 
 *** Create combined flux as zarr
-Set =RUN_STAGING = True= when ready. This writes to a temporary Zarr
-directory, validates the staged structure, then moves it into place.
+Set =RUN_STAGING = True= when ready. With =RUN_STAGING_DRY_RUN = True= this
+opens the inputs, builds the lazy stacked xarray object, and prints a summary
+without writing Zarr or triggering Dask compute. With =RUN_STAGING_DRY_RUN =
+False= it writes to a temporary Zarr directory, validates the staged
+structure, then moves it into place.
 The staged flux variable is explicitly written with Blosc/LZ4 compression
 (clevel 5, shuffle) and =units = "mol m-2 s-1"=. Flux variables with
 convertible units are converted before NaNs are filled.
 
 #+begin_src jupyter-python
 RUN_STAGING = True
+RUN_STAGING_DRY_RUN = True
 
 if RUN_STAGING:
     staged_path, input_records = stage_flux_zarr(
@@ -209,12 +213,15 @@ if RUN_STAGING:
         STAGED_FLUX_ZARR,
         temp_parent=STAGED_FLUX_TEMP,
         overwrite=False,
+        dry_run=RUN_STAGING_DRY_RUN,
     )
 else:
     staged_path = STAGED_FLUX_ZARR
     input_records = None
 
-if staged_path.exists():
+if RUN_STAGING and RUN_STAGING_DRY_RUN:
+    summary = None
+elif staged_path.exists():
     summary = validate_staged_flux_zarr(staged_path, full_nan_check=False)
 else:
     print(f"Staged flux Zarr does not exist yet: {staged_path}")

@@ -7,6 +7,7 @@ import sys
 import numpy as np
 import xarray as xr
 
+from verification_games import flux_stage
 from verification_games.flux_stage import (
     FluxDatasetInput,
     _flux_data_array,
@@ -141,3 +142,42 @@ def test_stack_flux_sources_can_preserve_nans_for_reference_path() -> None:
 
     assert bool(ds["flux"].isnull().any())
     assert ds.attrs["nan_policy"] == "NaNs preserved."
+
+
+def test_stage_flux_zarr_dry_run_skips_write(monkeypatch, tmp_path) -> None:
+    """Dry runs build the lazy dataset but do not materialise Zarr."""
+    ds = stack_flux_sources(
+        [
+            FluxDatasetInput(
+                species="co2",
+                games_scenario="BASE",
+                record_id="1",
+                path="/tmp/base_co2.nc",
+                dataset=_flux_dataset(0),
+            )
+        ],
+        sectors=("GPP",),
+    )
+    records = [object()]
+    calls = []
+
+    def fake_build(*args, **kwargs):
+        calls.append(("build", args, kwargs))
+        return ds, records
+
+    def fake_write(*_args, **_kwargs):
+        raise AssertionError("dry_run should not write Zarr")
+
+    monkeypatch.setattr(flux_stage, "build_staged_flux_dataset", fake_build)
+    monkeypatch.setattr(flux_stage, "write_staged_flux_zarr", fake_write)
+
+    target_path, returned_records = flux_stage.stage_flux_zarr(
+        object(),
+        tmp_path / "staged.zarr",
+        dry_run=True,
+    )
+
+    assert calls
+    assert target_path == tmp_path / "staged.zarr"
+    assert returned_records == records
+    assert not target_path.exists()
