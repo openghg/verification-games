@@ -95,7 +95,13 @@ to delay cluster startup is to avoid spending queued walltime while editing
 or inspecting cells.
 
 #+begin_src jupyter-python
-START_CLUSTER = False
+!cp /group/chem/acrg/verification_games_round_2/verification-games-fluxes/slurm.toml /user/home/bm13805/slurm.toml
+#+end_src
+
+#+RESULTS:
+
+#+begin_src jupyter-python
+START_CLUSTER = True
 
 if START_CLUSTER:
     account = load_slurm_account("slurm.toml")
@@ -109,9 +115,25 @@ if START_CLUSTER:
     )
     wait_for_workers(client, 8)
     warm_forward_model_numba(client)
-    client
+    print(client)
 #+end_src
 
+#+RESULTS:
+: <Client: 'tcp://172.25.9.102:40547' processes=8 threads=8, memory=357.60 GiB>
+
+#+name: dashboard_port
+#+begin_src jupyter-python
+str(client.dashboard_link).split("/")[-2].split(":")[-1]
+#+end_src
+
+#+RESULTS: dashboard_port
+: 42667
+
+#+begin_src bash :var port=dashboard_port
+pfwd -r $port -l 8787 -y
+#+end_src
+
+#+RESULTS:
 
 ** Stage all fluxes
 *** Checking inputs
@@ -173,8 +195,7 @@ The staged flux variable is explicitly written with Blosc/LZ4 compression
 convertible units are converted before NaNs are filled.
 
 #+begin_src jupyter-python
-RUN_STAGING = False
-REGISTER_STAGED_ZARR = False
+RUN_STAGING = True
 
 if RUN_STAGING:
     staged_path, input_records = stage_flux_zarr(
@@ -195,9 +216,157 @@ else:
 print(summary)
 #+end_src
 
+#+RESULTS:
+:RESULTS:
+#+begin_example
+Opening flux record 95: co2 ATEN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_ATEN_co2.nc
+Opening flux record 96: co2 BASE -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_BASE_co2.nc
+Opening flux record 97: co2 DFIN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_DFIN_co2.nc
+Opening flux record 98: co2 HFRA -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_HFRA_co2.nc
+Opening flux record 99: co2 HGER -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_HGER_co2.nc
+Opening flux record 100: co2 PTEN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_PTEN_co2.nc
+Opening flux record 90: o2 ATEN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_ATEN_o2.nc
+Opening flux record 89: o2 BASE -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_BASE_o2.nc
+Opening flux record 91: o2 DFIN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_DFIN_o2.nc
+Opening flux record 92: o2 HFRA -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_HFRA_o2.nc
+Opening flux record 93: o2 HGER -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_HGER_o2.nc
+Opening flux record 94: o2 PTEN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_PTEN_o2.nc
+Stacking source co2_ATEN_GPP
+Stacking source co2_ATEN_TER
+Stacking source co2_ATEN_FF
+Stacking source co2_ATEN_ocean
+Stacking source co2_BASE_GPP
+Stacking source co2_BASE_TER
+Stacking source co2_BASE_FF
+Stacking source co2_BASE_ocean
+Stacking source co2_DFIN_GPP
+Stacking source co2_DFIN_TER
+Stacking source co2_DFIN_FF
+Stacking source co2_DFIN_ocean
+Stacking source co2_HFRA_GPP
+Stacking source co2_HFRA_TER
+Stacking source co2_HFRA_FF
+Stacking source co2_HFRA_ocean
+Stacking source co2_HGER_GPP
+Stacking source co2_HGER_TER
+Stacking source co2_HGER_FF
+Stacking source co2_HGER_ocean
+Stacking source co2_PTEN_GPP
+Stacking source co2_PTEN_TER
+Stacking source co2_PTEN_FF
+Stacking source co2_PTEN_ocean
+Stacking source o2_ATEN_GPP
+#+end_example
+# [goto error]
+#+begin_example
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+Cell In[25], line 4
+      1 RUN_STAGING = True
+      2
+      3 if RUN_STAGING:
+----> 4     staged_path, input_records = stage_flux_zarr(
+      5         games_cat,
+      6         STAGED_FLUX_ZARR,
+      7         temp_parent=STAGED_FLUX_TEMP,
+
+File /group/chem/acrg/verification_games_round_2/verification-games/src/verification_games/flux_stage.py:298, in stage_flux_zarr(catalog, target_path, temp_parent, overwrite, output_chunks, fill_value, compressor)
+    287 def stage_flux_zarr(  # noqa: PLR0913
+    288     catalog,
+    289     target_path: str | Path,
+   (...)    295     compressor=DEFAULT_ZARR_COMPRESSOR,
+    296 ) -> tuple[Path, list]:
+    297     """Build and write the all-source staged flux Zarr."""
+--> 298     ds, records = build_staged_flux_dataset(catalog, output_chunks=output_chunks, fill_value=fill_value)
+    299     path = write_staged_flux_zarr(
+    300         ds,
+    301         target_path,
+   (...)    304         compressor=compressor,
+    305     )
+    306     return path, records
+
+File /group/chem/acrg/verification_games_round_2/verification-games/src/verification_games/flux_stage.py:250, in build_staged_flux_dataset(catalog, species, scenarios, sectors, university_abbr, input_chunks, output_chunks, fill_value)
+    243 records = find_flux_records(
+    244     catalog,
+    245     species=species,
+    246     scenarios=scenarios,
+    247     university_abbr=university_abbr,
+    248 )
+    249 inputs = open_flux_inputs(records, input_chunks=input_chunks)
+--> 250 ds = stack_flux_sources(inputs, sectors=sectors, output_chunks=output_chunks, fill_value=fill_value)
+    251 return ds, records
+
+File /group/chem/acrg/verification_games_round_2/verification-games/src/verification_games/flux_stage.py:189, in stack_flux_sources(inputs, sectors, output_chunks, fill_value)
+    187 label = source_label(item.species, item.games_scenario, sector)
+    188 print(f"Stacking source {label}")
+--> 189 da = convert_flux_units(item.dataset[sector], target_units=DEFAULT_FLUX_UNITS).astype(np.float32)
+    190 if fill_value is not None:
+    191     da = da.fillna(fill_value)
+
+File /group/chem/acrg/verification_games_round_2/verification-games/.venv/lib/python3.12/site-packages/xarray/core/common.py:1476, in DataWithCoords.astype(self, dtype, order, casting, subok, copy, keep_attrs)
+   1473 kwargs = dict(order=order, casting=casting, subok=subok, copy=copy)
+   1474 kwargs = {k: v for k, v in kwargs.items() if v is not None}
+-> 1476 return apply_ufunc(
+   1477     duck_array_ops.astype,
+   1478     self,
+   1479     dtype,
+   1480     kwargs=kwargs,
+   1481     keep_attrs=keep_attrs,
+   1482     dask="allowed",
+   1483 )
+
+File /group/chem/acrg/verification_games_round_2/verification-games/.venv/lib/python3.12/site-packages/xarray/computation/apply_ufunc.py:1267, in apply_ufunc(func, input_core_dims, output_core_dims, exclude_dims, vectorize, join, dataset_join, dataset_fill_value, keep_attrs, kwargs, dask, output_dtypes, output_sizes, meta, dask_gufunc_kwargs, on_missing_core_dim, *args)
+   1265 # feed DataArray apply_variable_ufunc through apply_dataarray_vfunc
+   1266 elif any(isinstance(a, DataArray) for a in args):
+-> 1267     return apply_dataarray_vfunc(
+   1268         variables_vfunc,
+   1269         *args,
+   1270         signature=signature,
+   1271         join=join,
+   1272         exclude_dims=exclude_dims,
+   1273         keep_attrs=keep_attrs,
+   1274     )
+   1275 # feed Variables directly through apply_variable_ufunc
+   1276 elif any(isinstance(a, Variable) for a in args):
+
+File /group/chem/acrg/verification_games_round_2/verification-games/.venv/lib/python3.12/site-packages/xarray/computation/apply_ufunc.py:312, in apply_dataarray_vfunc(func, signature, join, exclude_dims, keep_attrs, *args)
+    307 result_coords, result_indexes = build_output_coords_and_indexes(
+    308     args, signature, exclude_dims, combine_attrs=keep_attrs
+    309 )
+    311 data_vars = [getattr(a, "variable", a) for a in args]
+--> 312 result_var = func(*data_vars)
+    314 out: tuple[DataArray, ...] | DataArray
+    315 if signature.num_outputs > 1:
+
+File /group/chem/acrg/verification_games_round_2/verification-games/.venv/lib/python3.12/site-packages/xarray/computation/apply_ufunc.py:722, in apply_variable_ufunc(func, signature, exclude_dims, dask, output_dtypes, vectorize, keep_attrs, dask_gufunc_kwargs, *args)
+    719 from xarray.core.formatting import short_array_repr
+    720 from xarray.core.variable import as_compatible_data
+--> 722 dim_sizes = unified_dim_sizes(
+    723     (a for a in args if hasattr(a, "dims")), exclude_dims=exclude_dims
+    724 )
+    725 broadcast_dims = tuple(
+    726     dim for dim in dim_sizes if dim not in signature.all_core_dims
+    727 )
+    728 output_dims = [broadcast_dims + out for out in signature.output_core_dims]
+
+File /group/chem/acrg/verification_games_round_2/verification-games/.venv/lib/python3.12/site-packages/xarray/computation/apply_ufunc.py:628, in unified_dim_sizes(variables, exclude_dims)
+    626 for var in variables:
+    627     if len(set(var.dims)) < len(var.dims):
+--> 628         raise ValueError(
+    629             "broadcasting cannot handle duplicate "
+    630             f"dimensions on a variable: {list(var.dims)}"
+    631         )
+    632     for dim, size in zip(var.dims, var.shape, strict=True):
+    633         if dim not in exclude_dims:
+
+ValueError: broadcasting cannot handle duplicate dimensions on a variable: ['time', 'time', 'time']
+#+end_example
+:END:
 *** Store in =ogcat=
 
 #+begin_src jupyter-python
+REGISTER_STAGED_ZARR = False
+
 if REGISTER_STAGED_ZARR:
     if not staged_path.exists():
         raise FileNotFoundError(staged_path)
