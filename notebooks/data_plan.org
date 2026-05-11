@@ -815,104 +815,149 @@ Okay, maybe that explains it: the larger time chunks with smaller lat/lon chunks
 import xarray as xr
 import pandas as pd
 
-rows = []
+o2_flux_vars = ["GPP", "TER", "FF", "ocean"]
+missing_data_frames = []
 
 for path in sorted(flux_dir.glob("PARIS_*_o2.nc")):
+    print(f"Processing {path.name}", flush=True)
     ds = xr.open_dataset(path, chunks={})
     try:
-        for var in ["GPP", "TER", "FF", "ocean"]:
-            da = ds[var]
-            rows.append({
-                "file": path.name,
-                "var": var,
-                "shape": tuple(da.shape),
-                "time": da.sizes.get("time"),
-                "nan_count": int(da.isnull().sum().compute()),
-                "finite_count": int(da.notnull().sum().compute()),
-                "min": float(da.min(skipna=True).compute()),
-                "max": float(da.max(skipna=True).compute()),
-                "mean": float(da.mean(skipna=True).compute()),
-            })
+        sub = ds[o2_flux_vars]
+        reduce_dims = tuple(sub.sizes)
+
+        # Build all scalar reductions first, then submit one Dask graph per file.
+        stats = xr.Dataset(
+            {
+                "nan_count": sub.isnull().sum(dim=reduce_dims).to_array("var"),
+                "finite_count": sub.notnull().sum(dim=reduce_dims).to_array("var"),
+                "min": sub.min(dim=reduce_dims, skipna=True).to_array("var"),
+                "max": sub.max(dim=reduce_dims, skipna=True).to_array("var"),
+                "mean": sub.mean(dim=reduce_dims, skipna=True).to_array("var"),
+            }
+        ).compute()
+
+        df = stats.to_dataframe().reset_index()
+        df.insert(0, "file", path.name)
+        df["shape"] = [tuple(ds[var].shape) for var in df["var"]]
+        df["time"] = [ds[var].sizes.get("time") for var in df["var"]]
+        missing_data_frames.append(df)
     finally:
         ds.close()
 
-missing_data_df = pd.DataFrame(rows)
+missing_data_df = pd.concat(missing_data_frames, ignore_index=True)
 print(missing_data_df)
 #+end_src
 
 #+RESULTS:
-:RESULTS:
-# [goto error]
 #+begin_example
----------------------------------------------------------------------------
-KeyboardInterrupt                         Traceback (most recent call last)
-Cell In[101], line 23
-     19                 "max": float(da.max(skipna=True).compute()),
-     20                 "mean": float(da.mean(skipna=True).compute()),
-     21             })
-     22     finally:
----> 23         ds.close()
-     24
-     25 missing_data_df = pd.DataFrame(rows)
-     26 print(missing_data_df)
+Processing PARIS_ATEN_o2.nc
+Processing PARIS_BASE_o2.nc
+Processing PARIS_DFIN_o2.nc
+Processing PARIS_HFRA_o2.nc
+Processing PARIS_HGER_o2.nc
+Processing PARIS_PTEN_o2.nc
+                file    var  nan_count  ...          mean             shape  time
+0   PARIS_ATEN_o2.nc    GPP  494907504  ...  1.152476e-06  (9048, 293, 391)  9048
+1   PARIS_ATEN_o2.nc    TER  494907504  ... -1.148101e-06  (9048, 293, 391)  9048
+2   PARIS_ATEN_o2.nc     FF          0  ... -1.489023e-07  (9048, 293, 391)  9048
+3   PARIS_ATEN_o2.nc  ocean          0  ... -1.344262e-07  (9048, 293, 391)  9048
+4   PARIS_BASE_o2.nc    GPP  494907504  ...  1.152476e-06  (9048, 293, 391)  9048
+5   PARIS_BASE_o2.nc    TER  494907504  ... -1.148101e-06  (9048, 293, 391)  9048
+6   PARIS_BASE_o2.nc     FF          0  ... -1.419013e-07  (9048, 293, 391)  9048
+7   PARIS_BASE_o2.nc  ocean          0  ... -1.344262e-07  (9048, 293, 391)  9048
+8   PARIS_DFIN_o2.nc    GPP  494907504  ...  1.156446e-06  (9048, 293, 391)  9048
+9   PARIS_DFIN_o2.nc    TER  494907504  ... -1.148101e-06  (9048, 293, 391)  9048
+10  PARIS_DFIN_o2.nc     FF          0  ... -1.419013e-07  (9048, 293, 391)  9048
+11  PARIS_DFIN_o2.nc  ocean          0  ... -1.344262e-07  (9048, 293, 391)  9048
+12  PARIS_HFRA_o2.nc    GPP  494907504  ...  1.152476e-06  (9048, 293, 391)  9048
+13  PARIS_HFRA_o2.nc    TER  494907504  ... -1.148101e-06  (9048, 293, 391)  9048
+14  PARIS_HFRA_o2.nc     FF          0  ... -1.415793e-07  (9048, 293, 391)  9048
+15  PARIS_HFRA_o2.nc  ocean          0  ... -1.344262e-07  (9048, 293, 391)  9048
+16  PARIS_HGER_o2.nc    GPP  494907504  ...  1.152476e-06  (9048, 293, 391)  9048
+17  PARIS_HGER_o2.nc    TER  494907504  ... -1.148101e-06  (9048, 293, 391)  9048
+18  PARIS_HGER_o2.nc     FF          0  ... -1.408846e-07  (9048, 293, 391)  9048
+19  PARIS_HGER_o2.nc  ocean          0  ... -1.344262e-07  (9048, 293, 391)  9048
+20  PARIS_PTEN_o2.nc    GPP  494907504  ...  1.152476e-06  (9048, 293, 391)  9048
+21  PARIS_PTEN_o2.nc    TER  494907504  ... -1.148101e-06  (9048, 293, 391)  9048
+22  PARIS_PTEN_o2.nc     FF          0  ... -1.185381e-07  (9048, 293, 391)  9048
+23  PARIS_PTEN_o2.nc  ocean          0  ... -1.344262e-07  (9048, 293, 391)  9048
 
-File /group/chem/acrg/verification_games_round_2/verification-games-fluxes/.venv/lib/python3.12/site-packages/xarray/core/dataarray.py:1241, in DataArray.compute(self, **kwargs)
-   1211 """Trigger loading data into memory and return a new dataarray.
-   1212
-   1213 Data will be computed and/or loaded from disk or a remote source.
-   (...)   1238 Variable.compute
-   1239 """
-   1240 new = self.copy(deep=False)
--> 1241 return new.load(**kwargs)
-
-File /group/chem/acrg/verification_games_round_2/verification-games-fluxes/.venv/lib/python3.12/site-packages/xarray/core/dataarray.py:1167, in DataArray.load(self, **kwargs)
-   1137 def load(self, **kwargs) -> Self:
-   1138     """Trigger loading data into memory and return this dataarray.
-   1139
-   1140     Data will be computed and/or loaded from disk or a remote source.
-   (...)   1165     Variable.load
-   1166     """
--> 1167     ds = self._to_temp_dataset().load(**kwargs)
-   1168     new = self._from_temp_dataset(ds)
-   1169     self._variable = new._variable
-
-File /group/chem/acrg/verification_games_round_2/verification-games-fluxes/.venv/lib/python3.12/site-packages/xarray/core/dataset.py:557, in Dataset.load(self, **kwargs)
-    553         if chunked_data:
-    554             chunkmanager = get_chunked_array_type(*chunked_data.values())
-    555
-    556             # evaluate all the chunked arrays simultaneously
---> 557             evaluated_data: tuple[np.ndarray[Any, Any], ...] = chunkmanager.compute(
-    558                 *chunked_data.values(), **kwargs
-    559             )
-    560
-
-File /group/chem/acrg/verification_games_round_2/verification-games-fluxes/.venv/lib/python3.12/site-packages/xarray/namedarray/daskmanager.py:85, in DaskManager.compute(self, *data, **kwargs)
-     80 def compute(
-     81     self, *data: Any, **kwargs: Any
-     82 ) -> tuple[np.ndarray[Any, _DType_co], ...]:
-     83     from dask.array import compute
----> 85     return compute(*data, **kwargs)
-
-File /group/chem/acrg/verification_games_round_2/verification-games-fluxes/.venv/lib/python3.12/site-packages/dask/base.py:681, in compute(traverse, optimize_graph, scheduler, get, *args, **kwargs)
-    678     expr = expr.optimize()
-    679     keys = list(flatten(expr.__dask_keys__()))
---> 681     results = schedule(expr, keys, **kwargs)
-    683 return repack(results)
-
-File ~/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/queue.py:171, in Queue.get(self, block, timeout)
-    169 elif timeout is None:
-    170     while not self._qsize():
---> 171         self.not_empty.wait()
-    172 elif timeout < 0:
-    173     raise ValueError("'timeout' must be a non-negative number")
-
-File ~/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/threading.py:355, in Condition.wait(self, timeout)
-    353 try:    # restore state no matter what (e.g., KeyboardInterrupt)
-    354     if timeout is None:
---> 355         waiter.acquire()
-    356         gotit = True
-    357     else:
-
-KeyboardInterrupt:
+[24 rows x 9 columns]
 #+end_example
-:END:
+
+#+begin_src jupyter-python
+print(missing_data_df.columns)
+#+end_src
+
+#+RESULTS:
+: Index(['file', 'var', 'nan_count', 'finite_count', 'min', 'max', 'mean',
+:        'shape', 'time'],
+:       dtype='object')
+
+Let's figure out what varies so we can drop uninformative columns.
+#+begin_src jupyter-python
+for col in missing_data_df.columns:
+    print(col, missing_data_df[col].unique())
+#+end_src
+
+#+RESULTS:
+#+begin_example
+file ['PARIS_ATEN_o2.nc' 'PARIS_BASE_o2.nc' 'PARIS_DFIN_o2.nc'
+ 'PARIS_HFRA_o2.nc' 'PARIS_HGER_o2.nc' 'PARIS_PTEN_o2.nc']
+var ['GPP' 'TER' 'FF' 'ocean']
+nan_count [494907504         0]
+finite_count [ 541658520 1036566024]
+min [ 0.0000000e+00 -2.1310241e-05 -3.6742419e-04 -5.6239405e-06]
+max [5.3446129e-05 0.0000000e+00 2.1913859e-06]
+mean [ 1.1524758e-06 -1.1481011e-06 -1.4890232e-07 -1.3442616e-07
+ -1.4190130e-07  1.1564457e-06 -1.1481009e-06 -1.3442617e-07
+  1.1524756e-06 -1.4157931e-07 -1.4088461e-07 -1.1853813e-07]
+shape [(9048, 293, 391)]
+time [9048]
+#+end_example
+
+Okay we'll ignore shape and time, and I'll shorten the file names to "scenarios".
+
+#+begin_src jupyter-python
+missing_data_df["scenario"] = missing_data_df["file"].str.removeprefix("PARIS_").str.removesuffix("_o2.nc")
+md_df = missing_data_df[["var", "scenario", "nan_count", "finite_count", "min", "max", "mean"]].set_index(["var", "scenario"])
+print(md_df.sort_index())
+#+end_src
+
+#+RESULTS:
+#+begin_example
+                nan_count  finite_count       min       max          mean
+var   scenario
+FF    ATEN              0    1036566024 -0.000367  0.000000 -1.489023e-07
+      BASE              0    1036566024 -0.000367  0.000000 -1.419013e-07
+      DFIN              0    1036566024 -0.000367  0.000000 -1.419013e-07
+      HFRA              0    1036566024 -0.000367  0.000000 -1.415793e-07
+      HGER              0    1036566024 -0.000367  0.000000 -1.408846e-07
+      PTEN              0    1036566024 -0.000367  0.000000 -1.185381e-07
+GPP   ATEN      494907504     541658520  0.000000  0.000053  1.152476e-06
+      BASE      494907504     541658520  0.000000  0.000053  1.152476e-06
+      DFIN      494907504     541658520  0.000000  0.000053  1.156446e-06
+      HFRA      494907504     541658520  0.000000  0.000053  1.152476e-06
+      HGER      494907504     541658520  0.000000  0.000053  1.152476e-06
+      PTEN      494907504     541658520  0.000000  0.000053  1.152476e-06
+TER   ATEN      494907504     541658520 -0.000021  0.000000 -1.148101e-06
+      BASE      494907504     541658520 -0.000021  0.000000 -1.148101e-06
+      DFIN      494907504     541658520 -0.000021  0.000000 -1.148101e-06
+      HFRA      494907504     541658520 -0.000021  0.000000 -1.148101e-06
+      HGER      494907504     541658520 -0.000021  0.000000 -1.148101e-06
+      PTEN      494907504     541658520 -0.000021  0.000000 -1.148101e-06
+ocean ATEN              0    1036566024 -0.000006  0.000002 -1.344262e-07
+      BASE              0    1036566024 -0.000006  0.000002 -1.344262e-07
+      DFIN              0    1036566024 -0.000006  0.000002 -1.344262e-07
+      HFRA              0    1036566024 -0.000006  0.000002 -1.344262e-07
+      HGER              0    1036566024 -0.000006  0.000002 -1.344262e-07
+      PTEN              0    1036566024 -0.000006  0.000002 -1.344262e-07
+#+end_example
+
+Observations:
+- GPP and TER have NaNs, but the same number for each scenario
+- FF and ocean have no NaNs
+- For all scenarios, the sum of =nan_count= and =finite_count= seems to be the same: 494907504 + 541658520 = 1036566024
+- Within each scenario, all the columns are constant, except for the mean for different FF (fossil fuel) scenarios. Each scenario is a perturbation of "BASE", so I would expect some differences.
+- GPP (i.e. photosynthesis) is positive and TER (i.e. respiration) is negative
+- The non-zero mins or maxs, and the means seem to have roughly the right order of magnitude.
