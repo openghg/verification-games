@@ -477,3 +477,442 @@ for x in $files; do file "$1"/"$x"; echo; done;
 
 #+end_example
 :END:
+
+
+*** Summary of ncdump
+
+#+begin_src jupyter-python
+%%bash
+module load openmpi netcdf-c hdf5 2>/dev/null
+
+dir=/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB
+
+for f in "$dir"/PARIS_*_o2.nc; do
+  echo
+  echo "### $(basename "$f")"
+  ls -lh "$f"
+
+  ncdump -hs "$f" | grep -E \
+    ':(GPP|TER|FF|ocean):?_|(GPP|TER|FF|ocean):_(Storage|ChunkSizes|DeflateLevel|Shuffle|Fletcher32|Endianness|NoFill|FillValue)'
+done
+
+#+end_src
+
+#+RESULTS:
+:RESULTS:
+#+begin_example
+
+### PARIS_ATEN_o2.nc-rw-rw-r-- 1 bm13805 acrg 6.1G May  7 21:39 /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_ATEN_o2.nc
+		GPP:_FillValue = NaNf ;
+		GPP:_Storage = "chunked" ;
+		GPP:_ChunkSizes = 24, 293, 391 ;
+		GPP:_Shuffle = "true" ;
+		GPP:_DeflateLevel = 4 ;
+		GPP:_Endianness = "little" ;
+		TER:_FillValue = NaNf ;	TER:_Storage = "chunked" ;
+		TER:_ChunkSizes = 24, 293, 391 ;
+		TER:_Shuffle = "true" ;
+		TER:_DeflateLevel = 4 ;
+		TER:_Endianness = "little" ;
+		FF:_FillValue = NaNf ;
+		FF:_Storage = "chunked" ;	FF:_ChunkSizes = 24, 293, 391 ;
+		FF:_Shuffle = "true" ;
+		FF:_DeflateLevel = 4 ;
+		FF:_Endianness = "little" ;
+		ocean:_FillValue = NaNf ;
+		ocean:_Storage = "chunked" ;
+		ocean:_ChunkSizes = 24, 293, 391 ;
+		ocean:_Shuffle = "true" ;
+		ocean:_DeflateLevel = 4 ;
+		ocean:_Endianness = "little" ;
+
+### PARIS_BASE_o2.nc
+-rw-rw-r-- 1 bm13805 acrg 8.6G May  7 21:12 /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_BASE_o2.nc
+		GPP:_FillValue = NaNf ;
+		GPP:_Storage = "chunked" ;
+		GPP:_ChunkSizes = 24, 293, 391 ;
+		GPP:_Shuffle = "true" ;
+		GPP:_DeflateLevel = 4 ;
+		GPP:_Endianness = "little" ;
+		TER:_FillValue = NaNf ;	TER:_Storage = "chunked" ;
+		TER:_ChunkSizes = 24, 293, 391 ;
+		TER:_Shuffle = "true" ;
+		TER:_DeflateLevel = 4 ;
+		TER:_Endianness = "little" ;
+		FF:_FillValue = NaNf ;
+		FF:_Storage = "chunked" ;	FF:_ChunkSizes = 24, 293, 391 ;
+		FF:_Shuffle = "true" ;
+		FF:_DeflateLevel = 4 ;
+		FF:_Endianness = "little" ;
+		ocean:_FillValue = NaNf ;
+		ocean:_Storage = "chunked" ;
+		ocean:_ChunkSizes = 24, 293, 391 ;
+		ocean:_Shuffle = "true" ;
+		ocean:_DeflateLevel = 4 ;
+		ocean:_Endianness = "little" ;
+
+### PARIS_DFIN_o2.nc
+-rw-rw-r-- 1 bm13805 acrg 1.1G May  7 23:07 /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_DFIN_o2.nc
+		GPP:_FillValue = NaNf ;
+		GPP:_Storage = "chunked" ;
+		GPP:_ChunkSizes = 1293, 42, 56 ;
+		GPP:_Shuffle = "true" ;
+		GPP:_DeflateLevel = 4 ;
+		GPP:_Endianness = "little" ;
+		GPP:_NoFill = "true" ;TER:_FillValue = NaNf ;
+		TER:_Storage = "chunked" ;
+		TER:_ChunkSizes = 1293, 42, 56 ;
+		TER:_Shuffle = "true" ;
+		TER:_DeflateLevel = 4 ;
+		TER:_Endianness = "little" ;
+		TER:_NoFill = "true" ;
+		FF:_FillValue = NaNf ;
+		FF:_Storage = "chunked" ;
+		FF:_ChunkSizes = 1293, 42, 56 ;
+		FF:_Shuffle = "true" ;
+		FF:_DeflateLevel = 4 ;
+		FF:_Endianness = "little" ;
+		FF:_NoFill = "true" ;
+		ocean:_FillValue = NaNf ;
+		ocean:_Storage = "chunked" ;
+		ocean:_ChunkSizes = 1293, 42, 56 ;
+		ocean:_Shuffle = "true" ;
+		ocean:_DeflateLevel = 4 ;
+		ocean:_Endianness = "little" ;
+		ocean:_NoFill = "true" ;
+
+### PARIS_HFRA_o2.nc
+-rw-rw-r-- 1 bm13805 acrg 1.1G May  7 23:10 /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_HFRA_o2.nc
+		GPP:_FillValue = NaNf ;
+		GPP:_Storage = "chunked" ;
+		GPP:_ChunkSizes = 1293, 42, 56 ;
+		GPP:_Shuffle = "true" ;
+		GPP:_DeflateLevel = 4 ;
+		GPP:_Endianness = "little" ;
+		GPP:_NoFill = "true" ;TER:_FillValue = NaNf ;
+		TER:_Storage = "chunked" ;
+		TER:_ChunkSizes = 1293, 42, 56 ;
+		TER:_Shuffle = "true" ;
+		TER:_DeflateLevel = 4 ;
+		TER:_Endianness = "little" ;
+		TER:_NoFill = "true" ;
+		FF:_FillValue = NaNf ;
+		FF:_Storage = "chunked" ;
+		FF:_ChunkSizes = 1293, 42, 56 ;
+		FF:_Shuffle = "true" ;
+		FF:_DeflateLevel = 4 ;
+		FF:_Endianness = "little" ;
+		FF:_NoFill = "true" ;
+		ocean:_FillValue = NaNf ;
+		ocean:_Storage = "chunked" ;
+		ocean:_ChunkSizes = 1293, 42, 56 ;
+		ocean:_Shuffle = "true" ;
+		ocean:_DeflateLevel = 4 ;
+		ocean:_Endianness = "little" ;
+		ocean:_NoFill = "true" ;
+
+### PARIS_HGER_o2.nc
+-rw-rw-r-- 1 bm13805 acrg 1.1G May  7 23:13 /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_HGER_o2.nc
+		GPP:_FillValue = NaNf ;
+		GPP:_Storage = "chunked" ;
+		GPP:_ChunkSizes = 1293, 42, 56 ;
+		GPP:_Shuffle = "true" ;
+		GPP:_DeflateLevel = 4 ;
+		GPP:_Endianness = "little" ;
+		GPP:_NoFill = "true" ;TER:_FillValue = NaNf ;
+		TER:_Storage = "chunked" ;
+		TER:_ChunkSizes = 1293, 42, 56 ;
+		TER:_Shuffle = "true" ;
+		TER:_DeflateLevel = 4 ;
+		TER:_Endianness = "little" ;
+		TER:_NoFill = "true" ;
+		FF:_FillValue = NaNf ;
+		FF:_Storage = "chunked" ;
+		FF:_ChunkSizes = 1293, 42, 56 ;
+		FF:_Shuffle = "true" ;
+		FF:_DeflateLevel = 4 ;
+		FF:_Endianness = "little" ;
+		FF:_NoFill = "true" ;
+		ocean:_FillValue = NaNf ;
+		ocean:_Storage = "chunked" ;
+		ocean:_ChunkSizes = 1293, 42, 56 ;
+		ocean:_Shuffle = "true" ;
+		ocean:_DeflateLevel = 4 ;
+		ocean:_Endianness = "little" ;
+		ocean:_NoFill = "true" ;
+
+### PARIS_PTEN_o2.nc
+-rw-rw-r-- 1 bm13805 acrg 1.1G May  7 23:16 /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/PARIS_PTEN_o2.nc
+		GPP:_FillValue = NaNf ;
+		GPP:_Storage = "chunked" ;
+		GPP:_ChunkSizes = 1293, 42, 56 ;
+		GPP:_Shuffle = "true" ;
+		GPP:_DeflateLevel = 4 ;
+		GPP:_Endianness = "little" ;
+		GPP:_NoFill = "true" ;TER:_FillValue = NaNf ;
+		TER:_Storage = "chunked" ;
+		TER:_ChunkSizes = 1293, 42, 56 ;
+		TER:_Shuffle = "true" ;
+		TER:_DeflateLevel = 4 ;
+		TER:_Endianness = "little" ;
+		TER:_NoFill = "true" ;
+		FF:_FillValue = NaNf ;
+		FF:_Storage = "chunked" ;
+		FF:_ChunkSizes = 1293, 42, 56 ;
+		FF:_Shuffle = "true" ;
+		FF:_DeflateLevel = 4 ;
+		FF:_Endianness = "little" ;
+		FF:_NoFill = "true" ;
+		ocean:_FillValue = NaNf ;
+		ocean:_Storage = "chunked" ;
+		ocean:_ChunkSizes = 1293, 42, 56 ;
+		ocean:_Shuffle = "true" ;
+		ocean:_DeflateLevel = 4 ;
+		ocean:_Endianness = "little" ;
+		ocean:_NoFill = "true" ;
+#+end_example
+:END:
+
+It looks like the compression levels are the same.
+
+*** h5py summary
+
+#+begin_src jupyter-python
+from pathlib import Path
+import h5py
+import pandas as pd
+
+flux_dir = Path("/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB")
+rows = []
+
+for path in sorted(flux_dir.glob("PARIS_*_o2.nc")):
+    with h5py.File(path, "r") as h5:
+        for var in ["GPP", "TER", "FF", "ocean"]:
+            if var not in h5:
+                rows.append({"file": path.name, "var": var, "missing_var": True})
+                continue
+
+            d = h5[var]
+            rows.append({
+                "file": path.name,
+                "var": var,
+                "shape": d.shape,
+                "dtype": str(d.dtype),
+                "chunks": d.chunks,
+                "compression": d.compression,
+                "compression_opts": d.compression_opts,
+                "shuffle": d.shuffle,
+                "fletcher32": d.fletcher32,
+                "size_GB": path.stat().st_size / 1024**3,
+            })
+
+o2_df = pd.DataFrame(rows)
+
+print(o2_df)
+#+end_src
+
+#+RESULTS:
+#+begin_example
+                file    var             shape  ... shuffle fletcher32   size_GB
+0   PARIS_ATEN_o2.nc    GPP  (9048, 293, 391)  ...    True      False  6.041482
+1   PARIS_ATEN_o2.nc    TER  (9048, 293, 391)  ...    True      False  6.041482
+2   PARIS_ATEN_o2.nc     FF  (9048, 293, 391)  ...    True      False  6.041482
+3   PARIS_ATEN_o2.nc  ocean  (9048, 293, 391)  ...    True      False  6.041482
+4   PARIS_BASE_o2.nc    GPP  (9048, 293, 391)  ...    True      False  8.503042
+5   PARIS_BASE_o2.nc    TER  (9048, 293, 391)  ...    True      False  8.503042
+6   PARIS_BASE_o2.nc     FF  (9048, 293, 391)  ...    True      False  8.503042
+7   PARIS_BASE_o2.nc  ocean  (9048, 293, 391)  ...    True      False  8.503042
+8   PARIS_DFIN_o2.nc    GPP  (9048, 293, 391)  ...    True      False  1.083139
+9   PARIS_DFIN_o2.nc    TER  (9048, 293, 391)  ...    True      False  1.083139
+10  PARIS_DFIN_o2.nc     FF  (9048, 293, 391)  ...    True      False  1.083139
+11  PARIS_DFIN_o2.nc  ocean  (9048, 293, 391)  ...    True      False  1.083139
+12  PARIS_HFRA_o2.nc    GPP  (9048, 293, 391)  ...    True      False  1.083161
+13  PARIS_HFRA_o2.nc    TER  (9048, 293, 391)  ...    True      False  1.083161
+14  PARIS_HFRA_o2.nc     FF  (9048, 293, 391)  ...    True      False  1.083161
+15  PARIS_HFRA_o2.nc  ocean  (9048, 293, 391)  ...    True      False  1.083161
+16  PARIS_HGER_o2.nc    GPP  (9048, 293, 391)  ...    True      False  1.083109
+17  PARIS_HGER_o2.nc    TER  (9048, 293, 391)  ...    True      False  1.083109
+18  PARIS_HGER_o2.nc     FF  (9048, 293, 391)  ...    True      False  1.083109
+19  PARIS_HGER_o2.nc  ocean  (9048, 293, 391)  ...    True      False  1.083109
+20  PARIS_PTEN_o2.nc    GPP  (9048, 293, 391)  ...    True      False  1.083411
+21  PARIS_PTEN_o2.nc    TER  (9048, 293, 391)  ...    True      False  1.083411
+22  PARIS_PTEN_o2.nc     FF  (9048, 293, 391)  ...    True      False  1.083411
+23  PARIS_PTEN_o2.nc  ocean  (9048, 293, 391)  ...    True      False  1.083411
+
+[24 rows x 10 columns]
+#+end_example
+
+#+begin_src jupyter-python
+print(o2_df.columns)
+#+end_src
+
+#+RESULTS:
+: Index(['file', 'var', 'shape', 'dtype', 'chunks', 'compression',
+:        'compression_opts', 'shuffle', 'fletcher32', 'size_GB'],
+:       dtype='object')
+
+
+#+begin_src jupyter-python
+for col in o2_df.columns:
+    print(col, o2_df[col].unique())
+#+end_src
+
+#+RESULTS:
+#+begin_example
+file ['PARIS_ATEN_o2.nc' 'PARIS_BASE_o2.nc' 'PARIS_DFIN_o2.nc'
+ 'PARIS_HFRA_o2.nc' 'PARIS_HGER_o2.nc' 'PARIS_PTEN_o2.nc']
+var ['GPP' 'TER' 'FF' 'ocean']
+shape [(9048, 293, 391)]
+dtype ['float32']
+chunks [(24, 293, 391) (1293, 42, 56)]
+compression ['gzip']
+compression_opts [4]
+shuffle [ True]
+fletcher32 [False]
+size_GB [6.04148236 8.50304239 1.08313855 1.08316125 1.08310883 1.0834106 ]
+#+end_example
+
+Okay so only the chunk sizes seem to vary...
+
+#+begin_src jupyter-python
+print(o2_df[["file", "var", "chunks", "size_GB"]])
+#+end_src
+
+#+RESULTS:
+#+begin_example
+                file    var          chunks   size_GB
+0   PARIS_ATEN_o2.nc    GPP  (24, 293, 391)  6.041482
+1   PARIS_ATEN_o2.nc    TER  (24, 293, 391)  6.041482
+2   PARIS_ATEN_o2.nc     FF  (24, 293, 391)  6.041482
+3   PARIS_ATEN_o2.nc  ocean  (24, 293, 391)  6.041482
+4   PARIS_BASE_o2.nc    GPP  (24, 293, 391)  8.503042
+5   PARIS_BASE_o2.nc    TER  (24, 293, 391)  8.503042
+6   PARIS_BASE_o2.nc     FF  (24, 293, 391)  8.503042
+7   PARIS_BASE_o2.nc  ocean  (24, 293, 391)  8.503042
+8   PARIS_DFIN_o2.nc    GPP  (1293, 42, 56)  1.083139
+9   PARIS_DFIN_o2.nc    TER  (1293, 42, 56)  1.083139
+10  PARIS_DFIN_o2.nc     FF  (1293, 42, 56)  1.083139
+11  PARIS_DFIN_o2.nc  ocean  (1293, 42, 56)  1.083139
+12  PARIS_HFRA_o2.nc    GPP  (1293, 42, 56)  1.083161
+13  PARIS_HFRA_o2.nc    TER  (1293, 42, 56)  1.083161
+14  PARIS_HFRA_o2.nc     FF  (1293, 42, 56)  1.083161
+15  PARIS_HFRA_o2.nc  ocean  (1293, 42, 56)  1.083161
+16  PARIS_HGER_o2.nc    GPP  (1293, 42, 56)  1.083109
+17  PARIS_HGER_o2.nc    TER  (1293, 42, 56)  1.083109
+18  PARIS_HGER_o2.nc     FF  (1293, 42, 56)  1.083109
+19  PARIS_HGER_o2.nc  ocean  (1293, 42, 56)  1.083109
+20  PARIS_PTEN_o2.nc    GPP  (1293, 42, 56)  1.083411
+21  PARIS_PTEN_o2.nc    TER  (1293, 42, 56)  1.083411
+22  PARIS_PTEN_o2.nc     FF  (1293, 42, 56)  1.083411
+23  PARIS_PTEN_o2.nc  ocean  (1293, 42, 56)  1.083411
+#+end_example
+
+Okay, maybe that explains it: the larger time chunks with smaller lat/lon chunks gave better compression.
+
+*** Missing data checks
+
+#+begin_src jupyter-python
+import xarray as xr
+import pandas as pd
+
+rows = []
+
+for path in sorted(flux_dir.glob("PARIS_*_o2.nc")):
+    ds = xr.open_dataset(path, chunks={})
+    try:
+        for var in ["GPP", "TER", "FF", "ocean"]:
+            da = ds[var]
+            rows.append({
+                "file": path.name,
+                "var": var,
+                "shape": tuple(da.shape),
+                "time": da.sizes.get("time"),
+                "nan_count": int(da.isnull().sum().compute()),
+                "finite_count": int(da.notnull().sum().compute()),
+                "min": float(da.min(skipna=True).compute()),
+                "max": float(da.max(skipna=True).compute()),
+                "mean": float(da.mean(skipna=True).compute()),
+            })
+    finally:
+        ds.close()
+
+missing_data_df = pd.DataFrame(rows)
+print(missing_data_df)
+#+end_src
+
+#+RESULTS:
+:RESULTS:
+# [goto error]
+#+begin_example
+---------------------------------------------------------------------------
+KeyboardInterrupt                         Traceback (most recent call last)
+Cell In[101], line 23
+     19                 "max": float(da.max(skipna=True).compute()),
+     20                 "mean": float(da.mean(skipna=True).compute()),
+     21             })
+     22     finally:
+---> 23         ds.close()
+     24
+     25 missing_data_df = pd.DataFrame(rows)
+     26 print(missing_data_df)
+
+File /group/chem/acrg/verification_games_round_2/verification-games-fluxes/.venv/lib/python3.12/site-packages/xarray/core/dataarray.py:1241, in DataArray.compute(self, **kwargs)
+   1211 """Trigger loading data into memory and return a new dataarray.
+   1212
+   1213 Data will be computed and/or loaded from disk or a remote source.
+   (...)   1238 Variable.compute
+   1239 """
+   1240 new = self.copy(deep=False)
+-> 1241 return new.load(**kwargs)
+
+File /group/chem/acrg/verification_games_round_2/verification-games-fluxes/.venv/lib/python3.12/site-packages/xarray/core/dataarray.py:1167, in DataArray.load(self, **kwargs)
+   1137 def load(self, **kwargs) -> Self:
+   1138     """Trigger loading data into memory and return this dataarray.
+   1139
+   1140     Data will be computed and/or loaded from disk or a remote source.
+   (...)   1165     Variable.load
+   1166     """
+-> 1167     ds = self._to_temp_dataset().load(**kwargs)
+   1168     new = self._from_temp_dataset(ds)
+   1169     self._variable = new._variable
+
+File /group/chem/acrg/verification_games_round_2/verification-games-fluxes/.venv/lib/python3.12/site-packages/xarray/core/dataset.py:557, in Dataset.load(self, **kwargs)
+    553         if chunked_data:
+    554             chunkmanager = get_chunked_array_type(*chunked_data.values())
+    555
+    556             # evaluate all the chunked arrays simultaneously
+--> 557             evaluated_data: tuple[np.ndarray[Any, Any], ...] = chunkmanager.compute(
+    558                 *chunked_data.values(), **kwargs
+    559             )
+    560
+
+File /group/chem/acrg/verification_games_round_2/verification-games-fluxes/.venv/lib/python3.12/site-packages/xarray/namedarray/daskmanager.py:85, in DaskManager.compute(self, *data, **kwargs)
+     80 def compute(
+     81     self, *data: Any, **kwargs: Any
+     82 ) -> tuple[np.ndarray[Any, _DType_co], ...]:
+     83     from dask.array import compute
+---> 85     return compute(*data, **kwargs)
+
+File /group/chem/acrg/verification_games_round_2/verification-games-fluxes/.venv/lib/python3.12/site-packages/dask/base.py:681, in compute(traverse, optimize_graph, scheduler, get, *args, **kwargs)
+    678     expr = expr.optimize()
+    679     keys = list(flatten(expr.__dask_keys__()))
+--> 681     results = schedule(expr, keys, **kwargs)
+    683 return repack(results)
+
+File ~/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/queue.py:171, in Queue.get(self, block, timeout)
+    169 elif timeout is None:
+    170     while not self._qsize():
+--> 171         self.not_empty.wait()
+    172 elif timeout < 0:
+    173     raise ValueError("'timeout' must be a non-negative number")
+
+File ~/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/threading.py:355, in Condition.wait(self, timeout)
+    353 try:    # restore state no matter what (e.g., KeyboardInterrupt)
+    354     if timeout is None:
+--> 355         waiter.acquire()
+    356         gotit = True
+    357     else:
+
+KeyboardInterrupt:
+#+end_example
+:END:
