@@ -60,7 +60,7 @@ from openghg.retrieve import search_footprints, get_footprint
 
 * Fluxes
 
-** TODO Fixing fluxes in games catalog
+** DONE Fix fluxes in games catalog
 
 These have the wrong record type; I need to fix that.
 #+begin_src jupyter-python
@@ -175,7 +175,7 @@ games_cat.add_record_schema("verification_games_flux", games_data_schema)
 
 #+RESULTS:
 
-*** TODO Add games flux data by copying
+*** DONE Add games flux data by copying
 
 #+begin_src jupyter-python
 def get_path_and_metadata(record: CatalogRecord) -> tuple[str, dict, dict]:
@@ -403,7 +403,9 @@ CatalogRecord(catalog='games-catalog',
 #+end_example
 
 
-*** WAIT Delete incorrect entries
+** WAIT Delete incorrect entries
+
+I used the wrong record type when I stored the PARIS_.. fluxes. I've copied them to new records with the correct metadata and record schema, and want to delete the incorrect data.
 
 Wait until you're sure the flux data is correct.
 
@@ -430,7 +432,7 @@ total 52G
 
 Okay looks like the data has been copied successfully, but there isn't a delete method for =Catalog=, so maybe we'll just leave it for now.
 
-** TODO Verify that fluxes are correct
+** DONE Verify that fluxes are correct
 
 Some of the fluxes seem too small (all the CO2 fluxes have the same size, but the O2 fluxes have widely varying sizes).
 
@@ -961,3 +963,12 @@ Observations:
 - Within each scenario, all the columns are constant, except for the mean for different FF (fossil fuel) scenarios. Each scenario is a perturbation of "BASE", so I would expect some differences.
 - GPP (i.e. photosynthesis) is positive and TER (i.e. respiration) is negative
 - The non-zero mins or maxs, and the means seem to have roughly the right order of magnitude.
+
+
+*** Conclusion: the size difference is probably due to chunk sizes
+
+There is a ~6-8x difference in the size of the files based on the chunks, but that is not necessarily surprising:
+
+For ATEN/BASE, chunks are (24, 293, 391): each compressed chunk is a full spatial map over 24 times. That mixes land, ocean, ice, coastline, point sources, NaNs, zeros, and nonzero fluxes into every chunk.
+
+For DFIN/HFRA/HGER/PTEN, chunks are (1293, 42, 56): each chunk is a smaller spatial tile over a much longer time period. That can compress much better because many tiles may be mostly ocean, mostly land, mostly NaN, mostly zero, or smoothly varying through time. Gzip+shuffle works per HDF5 chunk, and it cannot use redundancy across chunk boundaries, so chunk shape matters a lot.
