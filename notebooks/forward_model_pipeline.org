@@ -85,6 +85,34 @@ games_cat = open_games_catalog(CATALOG_PATH)
 #+RESULTS:
 
 
+** Cluster
+:PROPERTIES:
+:CUSTOM_ID: cluster
+:END:
+Start the cluster before staging so the Zarr write, unit conversion, and
+NaN filling run on workers instead of the login process. The only reason
+to delay cluster startup is to avoid spending queued walltime while editing
+or inspecting cells.
+
+#+begin_src jupyter-python
+START_CLUSTER = False
+
+if START_CLUSTER:
+    account = load_slurm_account("slurm.toml")
+    cluster, client = make_slurm_cluster(
+        log_path=LOG_DIR,
+        account=account,
+        walltime="08:00:00",
+        n_workers=8,
+        cores_per_worker=1,
+        memory_per_worker_gb=48,
+    )
+    wait_for_workers(client, 8)
+    warm_forward_model_numba(client)
+    client
+#+end_src
+
+
 ** Stage all fluxes
 *** Checking inputs
 
@@ -140,6 +168,9 @@ print(results2.to_dataframe(["id", "species", "games_scenario"]))
 *** Create combined flux as zarr
 Set =RUN_STAGING = True= when ready. This writes to a temporary Zarr
 directory, validates the staged structure, then moves it into place.
+The staged flux variable is explicitly written with Blosc/LZ4 compression
+(clevel 5, shuffle) and =units = "mol m-2 s-1"=. Flux variables with
+convertible units are converted before NaNs are filled.
 
 #+begin_src jupyter-python
 RUN_STAGING = False
@@ -191,30 +222,6 @@ if RUN_FULL_NAN_CHECK:
     if not staged_path.exists():
         raise FileNotFoundError(staged_path)
     validate_staged_flux_zarr(staged_path, full_nan_check=True)
-#+end_src
-
-
-** Cluster
-:PROPERTIES:
-:CUSTOM_ID: cluster
-:END:
-
-#+begin_src jupyter-python
-START_CLUSTER = False
-
-if START_CLUSTER:
-    account = load_slurm_account("slurm.toml")
-    cluster, client = make_slurm_cluster(
-        log_path=LOG_DIR,
-        account=account,
-        walltime="08:00:00",
-        n_workers=8,
-        cores_per_worker=1,
-        memory_per_worker_gb=48,
-    )
-    wait_for_workers(client, 8)
-    warm_forward_model_numba(client)
-    client
 #+end_src
 
 

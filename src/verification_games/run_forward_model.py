@@ -12,9 +12,11 @@ from uuid import uuid4
 
 from forward_model_tests.mod_obs_functions import fp_x_flux_sum_space_numba
 import numpy as np
-from openghg.retrieve import get_footprint
+from numcodecs import Blosc
 import pandas as pd
 import xarray as xr
+
+from verification_games.metadata import append_history
 
 
 SITE_LIST = (
@@ -52,6 +54,14 @@ SITE_LIST = (
     "WES",
 )
 AVAILABLE_SHARED_STORE_SITES = tuple(site for site in SITE_LIST if site != "PUY")
+FP_X_FLUX_UNITS = "1"
+EXPECTED_FLUX_UNITS = "mol m-2 s-1"
+EXPECTED_FOOTPRINT_UNITS = "m2 s mol-1"
+DEFAULT_ZARR_COMPRESSOR = Blosc(cname="lz4", clevel=5, shuffle=Blosc.SHUFFLE)
+FP_X_FLUX_MODIFICATIONS = (
+    "Computed footprint times staged flux and summed over latitude and longitude; "
+    "baseline contribution not applied."
+)
 
 
 @dataclass(frozen=True)
@@ -89,7 +99,11 @@ def open_staged_flux(zarr_path: str | Path, *, chunks: dict[str, int] | None = N
     ds = xr.open_zarr(Path(zarr_path), chunks=chunks)
     if "flux" not in ds:
         raise ValueError(f"Staged flux Zarr is missing variable 'flux': {zarr_path}")
-    return ds["flux"]
+    flux = ds["flux"]
+    units = flux.attrs.get("units")
+    if units != EXPECTED_FLUX_UNITS:
+        raise ValueError(f"Expected staged flux units {EXPECTED_FLUX_UNITS!r}, found {units!r}")
+    return flux
 
 
 def select_flux_sources(
@@ -131,6 +145,13 @@ def footprint_dataset_from_openghg(data) -> xr.Dataset:
     return out
 
 
+def _validate_footprint_units(fp: xr.Dataset) -> None:
+    for name in ("fp_time_resolved", "fp_residual"):
+        units = fp[name].attrs.get("units")
+        if units is not None and units != EXPECTED_FOOTPRINT_UNITS:
+            raise ValueError(f"Expected footprint units {EXPECTED_FOOTPRINT_UNITS!r} for {name}, found {units!r}")
+
+
 def get_month_footprint(  # noqa: PLR0913
     *,
     site: str,
@@ -142,6 +163,8 @@ def get_month_footprint(  # noqa: PLR0913
     inlet: str | None = None,
 ) -> xr.Dataset:
     """Retrieve one site/month footprint from OpenGHG."""
+    from openghg.retrieve import get_footprint  # noqa: PLC0415
+
     kwargs = {
         "site": site.lower(),
         "domain": domain,
@@ -153,7 +176,9 @@ def get_month_footprint(  # noqa: PLR0913
     if inlet is not None:
         kwargs["inlet"] = inlet
     print(f"Fetching footprint: {kwargs}")
-    return footprint_dataset_from_openghg(get_footprint(**kwargs))
+    fp = footprint_dataset_from_openghg(get_footprint(**kwargs))
+    _validate_footprint_units(fp)
+    return fp
 
 
 def _flux_slice_for_footprint(flux: xr.DataArray, fp: xr.Dataset) -> xr.DataArray:
@@ -191,9 +216,23 @@ def compute_fp_x_flux(
         {
             "description": "(footprint * flux).sum('lat', 'lon') intermediate without baseline contribution.",
             "baseline_status": "not_applied",
+            "units": FP_X_FLUX_UNITS,
+            "flux_units": EXPECTED_FLUX_UNITS,
+            "footprint_units": EXPECTED_FOOTPRINT_UNITS,
+            "modifications": FP_X_FLUX_MODIFICATIONS,
         }
     )
+    result.attrs = append_history(result.attrs, FP_X_FLUX_MODIFICATIONS)
     return result
+
+
+def zarr_encoding(
+    ds: xr.Dataset,
+    *,
+    compressor=DEFAULT_ZARR_COMPRESSOR,
+) -> dict[str, dict[str, object]]:
+    """Return Zarr encoding for fp_x_flux outputs."""
+    return {name: {"compressor": compressor} for name in ds.data_vars}
 
 
 def fp_x_flux_output_path(output_dir: str | Path, *, site: str, start_date: str | pd.Timestamp) -> Path:
@@ -208,6 +247,7 @@ def write_fp_x_flux_zarr(
     *,
     overwrite: bool = False,
     consolidated: bool = True,
+    compressor=DEFAULT_ZARR_COMPRESSOR,
 ) -> Path:
     """Write one fp_x_flux output via a temporary sibling directory."""
     target = Path(output_path).expanduser()
@@ -218,7 +258,7 @@ def write_fp_x_flux_zarr(
     target.parent.mkdir(parents=True, exist_ok=True)
     ds = result.to_dataset()
     print(f"Writing fp_x_flux temporary Zarr: {tmp}")
-    ds.to_zarr(tmp, mode="w", consolidated=consolidated)
+    ds.to_zarr(tmp, mode="w", consolidated=consolidated, encoding=zarr_encoding(ds, compressor=compressor))
 
     if target.exists():
         print(f"Removing existing fp_x_flux Zarr before overwrite: {target}")

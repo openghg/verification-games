@@ -9,9 +9,13 @@ import shutil
 from uuid import uuid4
 
 import numpy as np
+from numcodecs import Blosc
 from ogcat import ArtifactLocator, Catalog
 import pandas as pd
 import xarray as xr
+
+from verification_games.metadata import append_history
+from verification_games.units import cf_ureg
 
 
 DEFAULT_VG_PATH = Path("/group/chem/acrg/verification_games_round_2")
@@ -21,6 +25,14 @@ DEFAULT_SPECIES = ("co2", "o2")
 DEFAULT_SECTORS = ("GPP", "TER", "FF", "ocean")
 DEFAULT_FLUX_CHUNKS = {"time": 24, "lat": 293, "lon": 391, "source": 4}
 DEFAULT_STAGE_KEYWORDS = ("flux_stage", "filled_nan_zero", "forward_model_input")
+DEFAULT_FLUX_UNITS = "mol m-2 s-1"
+DEFAULT_PINT_FLUX_UNITS = "mol/m2/s"
+DEFAULT_ZARR_COMPRESSOR = Blosc(cname="lz4", clevel=5, shuffle=Blosc.SHUFFLE)
+STAGED_FLUX_MODIFICATIONS = (
+    "Stacked PARIS species/scenario/sector fluxes into a single source dimension, "
+    "converted flux variables to mol m-2 s-1 where necessary, filled flux NaNs "
+    "with zero, and persisted as chunked Zarr for forward modelling."
+)
 
 
 @dataclass(frozen=True)
@@ -37,6 +49,22 @@ class FluxDatasetInput:
 def source_label(species: str, games_scenario: str, sector: str) -> str:
     """Return a stable source coordinate label."""
     return f"{species.lower()}_{games_scenario.upper()}_{sector}"
+
+
+def zarr_compressor_metadata(compressor=DEFAULT_ZARR_COMPRESSOR) -> dict[str, object]:
+    """Return a JSON-friendly description of a Zarr compressor."""
+    if hasattr(compressor, "get_config"):
+        return dict(compressor.get_config())
+    return {"repr": repr(compressor)}
+
+
+def zarr_encoding(
+    ds: xr.Dataset,
+    *,
+    compressor=DEFAULT_ZARR_COMPRESSOR,
+) -> dict[str, dict[str, object]]:
+    """Return Zarr encoding for data variables."""
+    return {name: {"compressor": compressor} for name in ds.data_vars}
 
 
 def open_games_catalog(catalog_path: str | Path = DEFAULT_CATALOG_PATH):
@@ -102,6 +130,38 @@ def open_flux_inputs(
     return inputs
 
 
+def _is_target_flux_units(units: str, target_units: str = DEFAULT_FLUX_UNITS) -> bool:
+    """Return whether source units are already exactly in the target unit scale."""
+    source = cf_ureg.parse_expression(units)
+    target = cf_ureg.parse_expression(target_units)
+    converted = source.to(target.units)
+    return bool(np.isclose(float(converted.magnitude), float(target.magnitude)))
+
+
+def convert_flux_units(
+    data: xr.DataArray,
+    *,
+    target_units: str = DEFAULT_FLUX_UNITS,
+    pint_target_units: str = DEFAULT_PINT_FLUX_UNITS,
+) -> xr.DataArray:
+    """Convert a flux DataArray to the target units using pint-xarray if needed."""
+    source_units = data.attrs.get("units")
+    if not source_units:
+        raise ValueError(f"Flux variable {data.name!r} has no 'units' attribute.")
+
+    if _is_target_flux_units(str(source_units), target_units):
+        out = data
+    else:
+        quantified = data.pint.quantify(unit_registry=cf_ureg)
+        with xr.set_options(keep_attrs=True):
+            out = quantified.pint.to(pint_target_units).pint.dequantify()
+
+    out.attrs = dict(data.attrs)
+    out.attrs["units"] = target_units
+    out.attrs["source_units_before_staging"] = str(source_units)
+    return out
+
+
 def stack_flux_sources(
     inputs: Sequence[FluxDatasetInput],
     *,
@@ -126,7 +186,7 @@ def stack_flux_sources(
                 raise KeyError(f"{item.path} is missing expected sector variable {sector!r}")
             label = source_label(item.species, item.games_scenario, sector)
             print(f"Stacking source {label}")
-            da = item.dataset[sector].astype(np.float32)
+            da = convert_flux_units(item.dataset[sector], target_units=DEFAULT_FLUX_UNITS).astype(np.float32)
             if fill_value is not None:
                 da = da.fillna(fill_value)
             arrays.append(da)
@@ -148,6 +208,7 @@ def stack_flux_sources(
     flux.attrs.update(
         {
             "description": "PARIS verification-games fluxes stacked by species, scenario and sector.",
+            "units": DEFAULT_FLUX_UNITS,
             "nan_policy": _nan_policy_text(fill_value),
         }
     )
@@ -158,9 +219,12 @@ def stack_flux_sources(
             "title": "PARIS verification-games staged fluxes",
             "source_record_ids": ",".join(input_records),
             "source_paths": "\n".join(input_paths),
+            "units": DEFAULT_FLUX_UNITS,
             "nan_policy": _nan_policy_text(fill_value),
+            "modifications": STAGED_FLUX_MODIFICATIONS,
         }
     )
+    out.attrs = append_history(out.attrs, STAGED_FLUX_MODIFICATIONS)
     return out
 
 
@@ -187,13 +251,14 @@ def build_staged_flux_dataset(  # noqa: PLR0913
     return ds, records
 
 
-def write_staged_flux_zarr(
+def write_staged_flux_zarr(  # noqa: PLR0913
     ds: xr.Dataset,
     target_path: str | Path,
     *,
     temp_parent: str | Path | None = None,
     overwrite: bool = False,
     consolidated: bool = True,
+    compressor=DEFAULT_ZARR_COMPRESSOR,
 ) -> Path:
     """Write staged flux to a temporary Zarr directory, then move into place."""
     target = Path(target_path).expanduser()
@@ -205,7 +270,7 @@ def write_staged_flux_zarr(
         raise FileExistsError(f"Target Zarr already exists: {target}")
 
     print(f"Writing staged flux Zarr to temporary path: {tmp}")
-    ds.to_zarr(tmp, mode="w", consolidated=consolidated)
+    ds.to_zarr(tmp, mode="w", consolidated=consolidated, encoding=zarr_encoding(ds, compressor=compressor))
     validation = validate_staged_flux_zarr(tmp, full_nan_check=False)
     print(f"Temporary staged flux validation: {validation}")
 
@@ -227,10 +292,17 @@ def stage_flux_zarr(  # noqa: PLR0913
     overwrite: bool = False,
     output_chunks: Mapping[str, int] | None = None,
     fill_value: float | None = 0.0,
+    compressor=DEFAULT_ZARR_COMPRESSOR,
 ) -> tuple[Path, list]:
     """Build and write the all-source staged flux Zarr."""
     ds, records = build_staged_flux_dataset(catalog, output_chunks=output_chunks, fill_value=fill_value)
-    path = write_staged_flux_zarr(ds, target_path, temp_parent=temp_parent, overwrite=overwrite)
+    path = write_staged_flux_zarr(
+        ds,
+        target_path,
+        temp_parent=temp_parent,
+        overwrite=overwrite,
+        compressor=compressor,
+    )
     return path, records
 
 
@@ -328,6 +400,9 @@ def register_staged_flux_zarr(  # noqa: PLR0913
         "input_record_ids": input_ids,
         "source_paths": input_paths,
         "nan_policy": "Flux NaNs filled with 0.0 during staging.",
+        "units": DEFAULT_FLUX_UNITS,
+        "zarr_compressor": zarr_compressor_metadata(),
+        "modifications": STAGED_FLUX_MODIFICATIONS,
     }
     naming_metadata = {
         "target_kind": "directory",
