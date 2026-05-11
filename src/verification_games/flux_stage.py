@@ -26,7 +26,6 @@ DEFAULT_SECTORS = ("GPP", "TER", "FF", "ocean")
 DEFAULT_FLUX_CHUNKS = {"time": 24, "lat": 293, "lon": 391, "source": 4}
 DEFAULT_STAGE_KEYWORDS = ("flux_stage", "filled_nan_zero", "forward_model_input")
 DEFAULT_FLUX_UNITS = "mol m-2 s-1"
-DEFAULT_PINT_FLUX_UNITS = "mol/m2/s"
 DEFAULT_ZARR_COMPRESSOR = Blosc(cname="lz4", clevel=5, shuffle=Blosc.SHUFFLE)
 STAGED_FLUX_MODIFICATIONS = (
     "Stacked PARIS species/scenario/sector fluxes into a single source dimension, "
@@ -132,29 +131,33 @@ def open_flux_inputs(
 
 def _is_target_flux_units(units: str, target_units: str = DEFAULT_FLUX_UNITS) -> bool:
     """Return whether source units are already exactly in the target unit scale."""
+    return bool(np.isclose(_unit_conversion_factor(units, target_units), 1.0))
+
+
+def _unit_conversion_factor(units: str, target_units: str = DEFAULT_FLUX_UNITS) -> float:
+    """Return the scalar factor needed to convert values into target units."""
     source = cf_ureg.parse_expression(units)
     target = cf_ureg.parse_expression(target_units)
     converted = source.to(target.units)
-    return bool(np.isclose(float(converted.magnitude), float(target.magnitude)))
+    return float(converted.magnitude) / float(target.magnitude)
 
 
 def convert_flux_units(
     data: xr.DataArray,
     *,
     target_units: str = DEFAULT_FLUX_UNITS,
-    pint_target_units: str = DEFAULT_PINT_FLUX_UNITS,
 ) -> xr.DataArray:
-    """Convert a flux DataArray to the target units using pint-xarray if needed."""
+    """Convert a flux DataArray to the target units using the CF/Pint registry."""
     source_units = data.attrs.get("units")
     if not source_units:
         raise ValueError(f"Flux variable {data.name!r} has no 'units' attribute.")
 
-    if _is_target_flux_units(str(source_units), target_units):
+    conversion_factor = _unit_conversion_factor(str(source_units), target_units)
+    if np.isclose(conversion_factor, 1.0):
         out = data
     else:
-        quantified = data.pint.quantify(unit_registry=cf_ureg)
         with xr.set_options(keep_attrs=True):
-            out = quantified.pint.to(pint_target_units).pint.dequantify()
+            out = data * np.float32(conversion_factor)
 
     out.attrs = dict(data.attrs)
     out.attrs["units"] = target_units
