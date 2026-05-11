@@ -18,6 +18,7 @@ from verification_games.flux_stage import (
 from verification_games.units import cf_ureg
 
 EXPECTED_O2_ATEN_GPP_MEAN = 11.0
+EXPECTED_REPAIRED_O2_GPP_MEAN = 7.0
 
 
 def _flux_dataset(offset: float = 0.0) -> xr.Dataset:
@@ -83,6 +84,30 @@ def test_flux_data_array_repairs_duplicate_dimension_names() -> None:
     assert repaired.attrs["units"] == "mol m-2 s-1"
 
 
+def test_flux_data_array_repairs_missing_coords_from_reference_grid() -> None:
+    """O2 files with broken dimension scales can reuse the valid CO2 grid."""
+    reference = _flux_dataset()
+    broken = xr.Dataset(
+        {
+            "GPP": (
+                ("lon", "lon", "lon"),
+                np.full((2, 2, 2), 3, dtype=np.float32),
+                {"units": "mol m-2 s-1"},
+            )
+        }
+    )
+
+    repaired = _flux_data_array(
+        broken,
+        "GPP",
+        reference_coords={dim: reference.coords[dim] for dim in ("time", "lat", "lon")},
+    )
+
+    assert repaired.dims == ("time", "lat", "lon")
+    np.testing.assert_array_equal(repaired["lat"], reference["lat"])
+    np.testing.assert_array_equal(repaired["lon"], reference["lon"])
+
+
 def test_stack_flux_sources_stacks_metadata_and_fills_nans() -> None:
     """Stacking creates a source dimension and replaces NaNs with zero."""
     inputs = [
@@ -124,6 +149,31 @@ def test_stack_flux_sources_stacks_metadata_and_fills_nans() -> None:
     assert float(flux.sel(source="o2_ATEN_GPP").mean()) == EXPECTED_O2_ATEN_GPP_MEAN
     assert flux.attrs["units"] == "mol m-2 s-1"
     assert "history" in ds.attrs
+
+
+def test_stack_flux_sources_reuses_reference_grid_for_malformed_later_inputs() -> None:
+    """Stacking captures the first good grid and applies it to malformed inputs."""
+    reference = _flux_dataset()
+    broken_o2 = xr.Dataset(
+        {
+            "GPP": (
+                ("time", "time", "time"),
+                np.full(reference["GPP"].shape, 7, dtype=np.float32),
+                {"units": "mol m-2 s-1"},
+            )
+        }
+    )
+    inputs = [
+        FluxDatasetInput("co2", "BASE", "1", "/tmp/base_co2.nc", reference),
+        FluxDatasetInput("o2", "ATEN", "2", "/tmp/aten_o2.nc", broken_o2),
+    ]
+
+    ds = stack_flux_sources(inputs, sectors=("GPP",))
+
+    assert ds["flux"].dims == ("time", "lat", "lon", "source")
+    np.testing.assert_array_equal(ds["lat"], reference["lat"])
+    np.testing.assert_array_equal(ds["lon"], reference["lon"])
+    assert float(ds["flux"].sel(source="o2_ATEN_GPP").mean().compute()) == EXPECTED_REPAIRED_O2_GPP_MEAN
 
 
 def test_stack_flux_sources_can_preserve_nans_for_reference_path() -> None:

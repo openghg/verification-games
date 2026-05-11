@@ -1554,3 +1554,95 @@ for var in ["GPP", "TER", "FF", "ocean"]:
     except Exception as exc:
         print("  astype error:", repr(exc))
 #+end_src
+
+
+** New zarr intermediate data
+
+#+begin_src jupyter-python
+zarr_scenario_results = games_cat.search(where={"processing_stage": "scenario_zarr", "record_type": "verification_games_flux"}, as_record_set=True)
+
+print(zarr_scenario_results.to_dataframe(["id", "species", "games_scenario", "title"]))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+     id species games_scenario                                        title
+0   101     co2           ATEN  PARIS CO2 ATEN verification-games fluxes v2
+1   102     co2           BASE  PARIS CO2 BASE verification-games fluxes v2
+2   103     co2           DFIN  PARIS CO2 DFIN verification-games fluxes v2
+3   104     co2           HFRA  PARIS CO2 HFRA verification-games fluxes v2
+4   105     co2           HGER  PARIS CO2 HGER verification-games fluxes v2
+5   106     co2           PTEN  PARIS CO2 PTEN verification-games fluxes v2
+6   107      o2           ATEN   PARIS O2 ATEN verification-games fluxes v2
+7   108      o2           BASE   PARIS O2 BASE verification-games fluxes v2
+8   109      o2           DFIN   PARIS O2 DFIN verification-games fluxes v2
+9   110      o2           HFRA   PARIS O2 HFRA verification-games fluxes v2
+10  111      o2           HGER   PARIS O2 HGER verification-games fluxes v2
+11  112      o2           PTEN   PARIS O2 PTEN verification-games fluxes v2
+#+end_example
+
+#+begin_src jupyter-python
+from pprint import pprint
+
+pprint(games_cat.get("101"))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+CatalogRecord(catalog='games-catalog',
+              time_added='2026-05-11T19:04:59Z',
+              id='101',
+              record_type='verification_games_flux',
+              locator=ArtifactLocator(kind='path',
+                                      value='/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_ATEN_co2_fluxes_v2.zarr',
+                                      relative_path='data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_ATEN_co2_fluxes_v2.zarr'),
+              stored_abspath='/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_ATEN_co2_fluxes_v2.zarr',
+              stored_relpath='data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_ATEN_co2_fluxes_v2.zarr',
+              storage_mode='write',
+              original_path='/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_ATEN_co2_fluxes_v2.zarr',
+              original_filename='PARIS_ATEN_co2_fluxes_v2.zarr',
+              suffixes=['.zarr'],
+              user_metadata={'domain': 'EUROPE',
+                             'flux_product': 'CTE-HR_filled_co2_fluxes',
+                             'format': 'zarr',
+                             'games_scenario': 'ATEN',
+                             'inputs': ['46',
+                                        '35',
+                                        '38',
+                                        '39',
+                                        '/group/chem/acrg/ES/fluxes/EUROPE/CO2/EUROPE-co2-JenaCarboscope-ocean-2021-hourly_flat.nc'],
+                             'processing_stage': 'scenario_zarr',
+                             'replaces': ['95'],
+                             'species': 'co2',
+                             'supersedes_record_ids': ['95'],
+                             'title': 'PARIS CO2 ATEN verification-games '
+                                      'fluxes v2',
+                             'university_abbr': 'UOB',
+                             'version': 'v2',
+                             'year': '202012-202112'},
+              derived_metadata={'chunks': {'lat': 293, 'lon': 391, 'time': 24},
+                                'dims': {'lat': 293, 'lon': 391, 'time': 9048},
+                                'dtype': 'float32',
+                                'output_variables': ['GPP',
+                                                     'TER',
+                                                     'FF',
+                                                     'ocean'],
+                                'pipeline_version': 'flux_pipeline_v2',
+                                'reader_hint': 'xarray.open_zarr',
+                                'sizes': {'lat': 293, 'lon': 391, 'time': 9048},
+                                'source_paths': {'FF': '/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/GridFED/v2024.0/co2_TOTAL_EUROPE_fossil-ff-monthly_2020-2021.nc',
+                                                 'GPP': '/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/sib4/co2_GPP_EUROPE_biosphere-fallback-gpp_202012-202112.nc',
+                                                 'TER': '/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/sib4/co2_TER_EUROPE_biosphere-fallback-ter_202012-202112.nc',
+                                                 'ocean': '/group/chem/acrg/ES/fluxes/EUROPE/CO2/EUROPE-co2-JenaCarboscope-ocean-2021-hourly_flat.nc',
+                                                 'primary_co2': '/group/chem/acrg/verification_games_round_2/verification-games-fluxes/data/raw/PARIS_ATEN.nc'},
+                                'source_record_ids': ['46',
+                                                      '35',
+                                                      '38',
+                                                      '39',
+                                                      '/group/chem/acrg/ES/fluxes/EUROPE/CO2/EUROPE-co2-JenaCarboscope-ocean-2021-hourly_flat.nc'],
+                                'units': 'mol m-2 s-1'},
+              naming_metadata={'resolved_directory': '/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr',
+                               'resolved_filename': 'PARIS_ATEN_co2_fluxes_v2.zarr',
+                               'storage_relative_path': 'data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_ATEN_co2_fluxes_v2.zarr',
+                               'target_kind': 'directory'})
+#+end_example

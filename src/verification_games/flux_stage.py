@@ -166,33 +166,78 @@ def convert_flux_units(
     return out
 
 
-def _flux_data_array(ds: xr.Dataset, sector: str) -> xr.DataArray:
+def _flux_data_array(
+    ds: xr.Dataset,
+    sector: str,
+    *,
+    reference_coords: Mapping[str, xr.DataArray] | None = None,
+) -> xr.DataArray:
     """Return a flux DataArray with canonical ``time, lat, lon`` dimensions."""
     data = ds[sector]
     expected_dims = ("time", "lat", "lon")
     if data.dims == expected_dims:
         return data
 
-    expected_shape = tuple(_coord_or_dim_size(ds, dim) for dim in expected_dims)
-    if data.ndim == FLUX_NDIMS and data.shape == expected_shape:
-        return xr.DataArray(
-            data.data,
-            dims=expected_dims,
-            coords={dim: (dim, ds.coords[dim].data) for dim in expected_dims if dim in ds.coords},
-            attrs=dict(data.attrs),
-            name=data.name,
+    if data.ndim == FLUX_NDIMS:
+        coords: dict[str, tuple[str, np.ndarray]] = {}
+        missing_coords: list[str] = []
+        for dim, size in zip(expected_dims, data.shape):
+            coord = _canonical_coord_data(ds, dim, int(size), reference_coords=reference_coords)
+            if coord is None:
+                missing_coords.append(dim)
+            else:
+                coords[dim] = (dim, coord)
+
+        if not missing_coords:
+            return xr.DataArray(
+                data.data,
+                dims=expected_dims,
+                coords=coords,
+                attrs=dict(data.attrs),
+                name=data.name,
+            )
+
+        raise ValueError(
+            f"Flux variable {sector!r} has malformed dimensions {data.dims!r} and no usable "
+            f"coordinate data for {missing_coords!r}. A valid CO2/grid source must be stacked "
+            "before malformed files so lat/lon coordinates can be repaired."
         )
 
     raise ValueError(
         f"Flux variable {sector!r} has unexpected dims/shape: "
-        f"dims={data.dims!r}, shape={data.shape!r}; expected {expected_dims} / {expected_shape}."
+        f"dims={data.dims!r}, shape={data.shape!r}; expected {expected_dims} / 3D flux data."
     )
 
 
-def _coord_or_dim_size(ds: xr.Dataset, dim: str) -> int:
+def _canonical_coord_data(
+    ds: xr.Dataset,
+    dim: str,
+    size: int,
+    *,
+    reference_coords: Mapping[str, xr.DataArray] | None = None,
+) -> np.ndarray | None:
+    """Return 1D coordinate values for a canonical flux dimension."""
     if dim in ds.coords:
-        return int(ds.coords[dim].size)
-    return int(ds.sizes[dim])
+        coord = ds.coords[dim]
+        if coord.ndim == 1 and coord.size == size:
+            return np.asarray(coord.data)
+
+    if reference_coords and dim in reference_coords:
+        coord = reference_coords[dim]
+        if coord.ndim == 1 and coord.size == size:
+            return np.asarray(coord.data)
+
+    return None
+
+
+def _update_reference_coords(reference_coords: dict[str, xr.DataArray], data: xr.DataArray) -> None:
+    """Capture canonical coordinates from the first valid/repaired grid source."""
+    for dim in ("time", "lat", "lon"):
+        if dim in reference_coords or dim not in data.coords:
+            continue
+        coord = data.coords[dim]
+        if coord.ndim == 1 and coord.size == data.sizes[dim]:
+            reference_coords[dim] = coord
 
 
 def stack_flux_sources(
@@ -210,6 +255,7 @@ def stack_flux_sources(
     source_sectors: list[str] = []
     input_records: list[str] = []
     input_paths: list[str] = []
+    reference_coords: dict[str, xr.DataArray] = {}
 
     for item in inputs:
         input_records.append(item.record_id)
@@ -219,7 +265,9 @@ def stack_flux_sources(
                 raise KeyError(f"{item.path} is missing expected sector variable {sector!r}")
             label = source_label(item.species, item.games_scenario, sector)
             print(f"Stacking source {label}")
-            da = convert_flux_units(_flux_data_array(item.dataset, sector), target_units=DEFAULT_FLUX_UNITS)
+            da = _flux_data_array(item.dataset, sector, reference_coords=reference_coords)
+            _update_reference_coords(reference_coords, da)
+            da = convert_flux_units(da, target_units=DEFAULT_FLUX_UNITS)
             if da.dtype != np.dtype("float32"):
                 da = da.astype(np.float32)
             if fill_value is not None:
