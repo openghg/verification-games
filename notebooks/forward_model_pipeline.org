@@ -15,6 +15,8 @@
 #+end_src
 
 #+RESULTS:
+: The autoreload extension is already loaded. To reload it, use:
+:   %reload_ext autoreload
 
 
 
@@ -113,11 +115,11 @@ if START_CLUSTER:
         log_path=LOG_DIR,
         account=account,
         walltime="08:00:00",
-        n_workers=8,
+        n_workers=12,
         cores_per_worker=1,
-        memory_per_worker_gb=48,
+        memory_per_worker_gb=32,
     )
-    wait_for_workers(client, 8)
+    wait_for_workers(client, 12)
     warm_forward_model_numba(client)
     print(client)
 #+end_src
@@ -125,25 +127,93 @@ if START_CLUSTER:
 #+RESULTS:
 : /group/chem/acrg/verification_games_round_2/verification-games/.venv/lib/python3.12/site-packages/distributed/node.py:188: UserWarning: Port 8787 is already in use.
 : Perhaps you already have a cluster running?
-: Hosting the HTTP server on port 45553 instead
+: Hosting the HTTP server on port 33873 instead
 :   warnings.warn(
-: <Client: 'tcp://172.25.9.102:35725' processes=8 threads=8, memory=357.60 GiB>
+: <Client: 'tcp://172.25.9.102:36535' processes=12 threads=12, memory=357.60 GiB>
+
+
+
+*** Dashboard
 
 #+name: dashboard_port
 #+begin_src jupyter-python
-str(client.dashboard_link).split("/")[-2].split(":")[-1]
+from urllib.parse import urlparse
+
+parsed = urlparse(str(client.dashboard_link))
+parsed.port
 #+end_src
 
 #+RESULTS: dashboard_port
-: 45553
+: 33873
 
-#+begin_src bash :var port=dashboard_port
-pfwd -r $port -l 8787 -y
+#+name: local_dashboard_port
+#+begin_src emacs-lisp
+8787
 #+end_src
 
-#+RESULTS:
-: Kill process 48839 using port 8787? [y/N]
+#+RESULTS: local_dashboard_port
+: 8787
 
+#+name: dashboard_title
+#+begin_src emacs-lisp :results value
+(let ((session
+       (save-excursion
+         (goto-char (point-min))
+         (when (re-search-forward "^#\+PROPERTY:.*:session[ \t]+\([^ \t\n]+\)" nil t)
+           (match-string 1)))))
+  (if session
+      (concat "Dask: " (car (last (split-string session ":"))))
+    "Dask dashboard"))
+    #+end_src
+
+    #+RESULTS: dashboard_title
+    : Dask dashboard
+
+#+begin_src bash :var remote_port=dashboard_port local_port=local_dashboard_port :results silent
+pfwd -r "$remote_port" -l "$local_port" -y
+#+end_src
+
+#+begin_src bash :var local_port=local_dashboard_port title=dashboard_title :results silent
+url="http://localhost:${local_port}/status"
+
+wrapper="/tmp/dask-dashboard-${local_port}.html"
+
+cat > "$wrapper" <<EOF
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${title}</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    iframe {
+      border: 0;
+      width: 100vw;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <iframe src="${url}"></iframe>
+</body>
+</html>
+EOF
+
+file_url="$(python3 -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve().as_uri())' "$wrapper")"
+
+osascript <<APPLESCRIPT
+tell application "Safari"
+    activate
+    make new document with properties {URL:"$file_url"}
+end tell
+APPLESCRIPT
+#+end_src
 
 ** Stage all fluxes
 *** Checking inputs
@@ -164,6 +234,21 @@ print(
 #+end_src
 
 #+RESULTS:
+#+begin_example
+     id species games_scenario                                        title
+0   101     co2           ATEN  PARIS CO2 ATEN verification-games fluxes v2
+1   102     co2           BASE  PARIS CO2 BASE verification-games fluxes v2
+2   103     co2           DFIN  PARIS CO2 DFIN verification-games fluxes v2
+3   104     co2           HFRA  PARIS CO2 HFRA verification-games fluxes v2
+4   105     co2           HGER  PARIS CO2 HGER verification-games fluxes v2
+5   106     co2           PTEN  PARIS CO2 PTEN verification-games fluxes v2
+6   107      o2           ATEN   PARIS O2 ATEN verification-games fluxes v2
+7   108      o2           BASE   PARIS O2 BASE verification-games fluxes v2
+8   109      o2           DFIN   PARIS O2 DFIN verification-games fluxes v2
+9   110      o2           HFRA   PARIS O2 HFRA verification-games fluxes v2
+10  111      o2           HGER   PARIS O2 HGER verification-games fluxes v2
+11  112      o2           PTEN   PARIS O2 PTEN verification-games fluxes v2
+#+end_example
 
 #+begin_src jupyter-python
 from ogcat import CatalogRecordSet
@@ -183,6 +268,21 @@ print(results2.to_dataframe(["id", "species", "games_scenario", "title"]))
 #+end_src
 
 #+RESULTS:
+#+begin_example
+     id species games_scenario                                        title
+0   101     co2           ATEN  PARIS CO2 ATEN verification-games fluxes v2
+1   102     co2           BASE  PARIS CO2 BASE verification-games fluxes v2
+2   103     co2           DFIN  PARIS CO2 DFIN verification-games fluxes v2
+3   104     co2           HFRA  PARIS CO2 HFRA verification-games fluxes v2
+4   105     co2           HGER  PARIS CO2 HGER verification-games fluxes v2
+5   106     co2           PTEN  PARIS CO2 PTEN verification-games fluxes v2
+6   107      o2           ATEN   PARIS O2 ATEN verification-games fluxes v2
+7   108      o2           BASE   PARIS O2 BASE verification-games fluxes v2
+8   109      o2           DFIN   PARIS O2 DFIN verification-games fluxes v2
+9   110      o2           HFRA   PARIS O2 HFRA verification-games fluxes v2
+10  111      o2           HGER   PARIS O2 HGER verification-games fluxes v2
+11  112      o2           PTEN   PARIS O2 PTEN verification-games fluxes v2
+#+end_example
 
 *** Create combined flux as zarr
 Set =RUN_STAGING = True= when ready. With =RUN_STAGING_DRY_RUN = True= this
@@ -194,9 +294,10 @@ The staged flux variable is explicitly written with Blosc/LZ4 compression
 (clevel 5, shuffle) and =units = "mol m-2 s-1"=. Flux variables with
 convertible units are converted before NaNs are filled.
 
+
 #+begin_src jupyter-python
-RUN_STAGING = True
-RUN_STAGING_DRY_RUN = True
+RUN_STAGING = False
+RUN_STAGING_DRY_RUN = False
 
 if RUN_STAGING:
     staged_path, input_records = stage_flux_zarr(
@@ -224,11 +325,77 @@ print(summary)
 #+end_src
 
 #+RESULTS:
+#+begin_example
+Opening flux record 101: co2 ATEN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_ATEN_co2_fluxes_v2.zarr
+Opening flux record 102: co2 BASE -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_BASE_co2_fluxes_v2.zarr
+Opening flux record 103: co2 DFIN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_DFIN_co2_fluxes_v2.zarr
+Opening flux record 104: co2 HFRA -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_HFRA_co2_fluxes_v2.zarr
+Opening flux record 105: co2 HGER -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_HGER_co2_fluxes_v2.zarr
+Opening flux record 106: co2 PTEN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_PTEN_co2_fluxes_v2.zarr
+Opening flux record 107: o2 ATEN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_ATEN_o2_fluxes_v2.zarr
+Opening flux record 108: o2 BASE -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_BASE_o2_fluxes_v2.zarr
+Opening flux record 109: o2 DFIN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_DFIN_o2_fluxes_v2.zarr
+Opening flux record 110: o2 HFRA -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_HFRA_o2_fluxes_v2.zarr
+Opening flux record 111: o2 HGER -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_HGER_o2_fluxes_v2.zarr
+Opening flux record 112: o2 PTEN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_PTEN_o2_fluxes_v2.zarr
+Stacking source co2_ATEN_GPP
+Stacking source co2_ATEN_TER
+Stacking source co2_ATEN_FF
+Stacking source co2_ATEN_ocean
+Stacking source co2_BASE_GPP
+Stacking source co2_BASE_TER
+Stacking source co2_BASE_FF
+Stacking source co2_BASE_ocean
+Stacking source co2_DFIN_GPP
+Stacking source co2_DFIN_TER
+Stacking source co2_DFIN_FF
+Stacking source co2_DFIN_ocean
+Stacking source co2_HFRA_GPP
+Stacking source co2_HFRA_TER
+Stacking source co2_HFRA_FF
+Stacking source co2_HFRA_ocean
+Stacking source co2_HGER_GPP
+Stacking source co2_HGER_TER
+Stacking source co2_HGER_FF
+Stacking source co2_HGER_ocean
+Stacking source co2_PTEN_GPP
+Stacking source co2_PTEN_TER
+Stacking source co2_PTEN_FF
+Stacking source co2_PTEN_ocean
+Stacking source o2_ATEN_GPP
+Stacking source o2_ATEN_TER
+Stacking source o2_ATEN_FF
+Stacking source o2_ATEN_ocean
+Stacking source o2_BASE_GPP
+Stacking source o2_BASE_TER
+Stacking source o2_BASE_FF
+Stacking source o2_BASE_ocean
+Stacking source o2_DFIN_GPP
+Stacking source o2_DFIN_TER
+Stacking source o2_DFIN_FF
+Stacking source o2_DFIN_ocean
+Stacking source o2_HFRA_GPP
+Stacking source o2_HFRA_TER
+Stacking source o2_HFRA_FF
+Stacking source o2_HFRA_ocean
+Stacking source o2_HGER_GPP
+Stacking source o2_HGER_TER
+Stacking source o2_HGER_FF
+Stacking source o2_HGER_ocean
+Stacking source o2_PTEN_GPP
+Stacking source o2_PTEN_TER
+Stacking source o2_PTEN_FF
+Stacking source o2_PTEN_ocean
+Writing staged flux Zarr to temporary path: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/staging_tmp/.paris_cte-hr_filled_fluxes_EUROPE_flux_stage_from_scenario_zarr_v2_filled_nan_zero_forward_model_input_202012-202112.zarr.46991ae9e805466591767940359890da.tmp
+Temporary staged flux validation: {'path': '/group/chem/acrg/verification_games_round_2/forward_model_intermediates/staging_tmp/.paris_cte-hr_filled_fluxes_EUROPE_flux_stage_from_scenario_zarr_v2_filled_nan_zero_forward_model_input_202012-202112.zarr.46991ae9e805466591767940359890da.tmp', 'sizes': {'time': 9048, 'lat': 293, 'lon': 391, 'source': 48}, 'chunks': {'time': (24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24), 'lat': (293,), 'lon': (391,), 'source': (4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4)}, 'sources': ['co2_ATEN_GPP', 'co2_ATEN_TER', 'co2_ATEN_FF', 'co2_ATEN_ocean', 'co2_BASE_GPP', 'co2_BASE_TER', 'co2_BASE_FF', 'co2_BASE_ocean', 'co2_DFIN_GPP', 'co2_DFIN_TER', 'co2_DFIN_FF', 'co2_DFIN_ocean', 'co2_HFRA_GPP', 'co2_HFRA_TER', 'co2_HFRA_FF', 'co2_HFRA_ocean', 'co2_HGER_GPP', 'co2_HGER_TER', 'co2_HGER_FF', 'co2_HGER_ocean', 'co2_PTEN_GPP', 'co2_PTEN_TER', 'co2_PTEN_FF', 'co2_PTEN_ocean', 'o2_ATEN_GPP', 'o2_ATEN_TER', 'o2_ATEN_FF', 'o2_ATEN_ocean', 'o2_BASE_GPP', 'o2_BASE_TER', 'o2_BASE_FF', 'o2_BASE_ocean', 'o2_DFIN_GPP', 'o2_DFIN_TER', 'o2_DFIN_FF', 'o2_DFIN_ocean', 'o2_HFRA_GPP', 'o2_HFRA_TER', 'o2_HFRA_FF', 'o2_HFRA_ocean', 'o2_HGER_GPP', 'o2_HGER_TER', 'o2_HGER_FF', 'o2_HGER_ocean', 'o2_PTEN_GPP', 'o2_PTEN_TER', 'o2_PTEN_FF', 'o2_PTEN_ocean']}
+Moving staged flux Zarr into place: /group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/PARIS_CTE-HR_filled_fluxes_staged/zarr_v2/paris_cte-hr_filled_fluxes_EUROPE_flux_stage_from_scenario_zarr_v2_filled_nan_zero_forward_model_input_202012-202112.zarr
+{'path': '/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/PARIS_CTE-HR_filled_fluxes_staged/zarr_v2/paris_cte-hr_filled_fluxes_EUROPE_flux_stage_from_scenario_zarr_v2_filled_nan_zero_forward_model_input_202012-202112.zarr', 'sizes': {'time': 9048, 'lat': 293, 'lon': 391, 'source': 48}, 'chunks': {'time': (24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24), 'lat': (293,), 'lon': (391,), 'source': (4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4)}, 'sources': ['co2_ATEN_GPP', 'co2_ATEN_TER', 'co2_ATEN_FF', 'co2_ATEN_ocean', 'co2_BASE_GPP', 'co2_BASE_TER', 'co2_BASE_FF', 'co2_BASE_ocean', 'co2_DFIN_GPP', 'co2_DFIN_TER', 'co2_DFIN_FF', 'co2_DFIN_ocean', 'co2_HFRA_GPP', 'co2_HFRA_TER', 'co2_HFRA_FF', 'co2_HFRA_ocean', 'co2_HGER_GPP', 'co2_HGER_TER', 'co2_HGER_FF', 'co2_HGER_ocean', 'co2_PTEN_GPP', 'co2_PTEN_TER', 'co2_PTEN_FF', 'co2_PTEN_ocean', 'o2_ATEN_GPP', 'o2_ATEN_TER', 'o2_ATEN_FF', 'o2_ATEN_ocean', 'o2_BASE_GPP', 'o2_BASE_TER', 'o2_BASE_FF', 'o2_BASE_ocean', 'o2_DFIN_GPP', 'o2_DFIN_TER', 'o2_DFIN_FF', 'o2_DFIN_ocean', 'o2_HFRA_GPP', 'o2_HFRA_TER', 'o2_HFRA_FF', 'o2_HFRA_ocean', 'o2_HGER_GPP', 'o2_HGER_TER', 'o2_HGER_FF', 'o2_HGER_ocean', 'o2_PTEN_GPP', 'o2_PTEN_TER', 'o2_PTEN_FF', 'o2_PTEN_ocean']}
+#+end_example
 
 *** Store in =ogcat=
 
 #+begin_src jupyter-python
-REGISTER_STAGED_ZARR = False
+REGISTER_STAGED_ZARR = True
 
 if REGISTER_STAGED_ZARR:
     if not staged_path.exists():
@@ -243,6 +410,10 @@ if REGISTER_STAGED_ZARR:
     staged_record = register_staged_flux_zarr(games_cat, staged_path, input_records)
     print(staged_record)
 #+end_src
+
+#+RESULTS:
+: Registering staged flux Zarr reference in ogcat: /group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/PARIS_CTE-HR_filled_fluxes_staged/zarr_v2/paris_cte-hr_filled_fluxes_EUROPE_flux_stage_from_scenario_zarr_v2_filled_nan_zero_forward_model_input_202012-202112.zarr
+: CatalogRecord(catalog='games-catalog', time_added='2026-05-11T19:54:21Z', id='113', record_type='derived_flux', locator=ArtifactLocator(kind='path', value='/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/PARIS_CTE-HR_filled_fluxes_staged/zarr_v2/paris_cte-hr_filled_fluxes_EUROPE_flux_stage_from_scenario_zarr_v2_filled_nan_zero_forward_model_input_202012-202112.zarr', relative_path='data/flux/derived/PARIS_CTE-HR_filled_fluxes_staged/zarr_v2/paris_cte-hr_filled_fluxes_EUROPE_flux_stage_from_scenario_zarr_v2_filled_nan_zero_forward_model_input_202012-202112.zarr'), stored_abspath='/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/PARIS_CTE-HR_filled_fluxes_staged/zarr_v2/paris_cte-hr_filled_fluxes_EUROPE_flux_stage_from_scenario_zarr_v2_filled_nan_zero_forward_model_input_202012-202112.zarr', stored_relpath='data/flux/derived/PARIS_CTE-HR_filled_fluxes_staged/zarr_v2/paris_cte-hr_filled_fluxes_EUROPE_flux_stage_from_scenario_zarr_v2_filled_nan_zero_forward_model_input_202012-202112.zarr', storage_mode='reference', original_path='/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/PARIS_CTE-HR_filled_fluxes_staged/zarr_v2/paris_cte-hr_filled_fluxes_EUROPE_flux_stage_from_scenario_zarr_v2_filled_nan_zero_forward_model_input_202012-202112.zarr', original_filename='paris_cte-hr_filled_fluxes_EUROPE_flux_stage_from_scenario_zarr_v2_filled_nan_zero_forward_model_input_202012-202112.zarr', suffixes=['.zarr'], user_metadata={'title': 'PARIS verification-games staged flux Zarr for forward modelling.', 'product': 'PARIS_CTE-HR_filled_fluxes_staged', 'version': 'zarr_v1', 'species': ['co2', 'o2'], 'sector': ['GPP', 'TER', 'FF', 'ocean'], 'domain': 'EUROPE', 'provenance': 'derived', 'format': 'zarr', 'data_format': 'zarr', 'year': '202012-202112', 'keywords': ['flux_stage', 'filled_nan_zero', 'forward_model_input'], 'inputs': ['101', '102', '103', '104', '105', '106', '107', '108', '109', '110', '111', '112'], 'university_abbr': 'UOB', 'modifications': 'Stacked species/scenario/sector fluxes into a source dimension and filled flux NaNs with zero.'}, derived_metadata={'reader_hint': 'xarray.open_zarr', 'output_variables': ['flux'], 'sizes': {'time': 9048, 'lat': 293, 'lon': 391, 'source': 48}, 'chunks': {'time': 24, 'lat': 293, 'lon': 391, 'source': 4}, 'source_count': 48, 'sources': ['co2_ATEN_GPP', 'co2_ATEN_TER', 'co2_ATEN_FF', 'co2_ATEN_ocean', 'co2_BASE_GPP', 'co2_BASE_TER', 'co2_BASE_FF', 'co2_BASE_ocean', 'co2_DFIN_GPP', 'co2_DFIN_TER', 'co2_DFIN_FF', 'co2_DFIN_ocean', 'co2_HFRA_GPP', 'co2_HFRA_TER', 'co2_HFRA_FF', 'co2_HFRA_ocean', 'co2_HGER_GPP', 'co2_HGER_TER', 'co2_HGER_FF', 'co2_HGER_ocean', 'co2_PTEN_GPP', 'co2_PTEN_TER', 'co2_PTEN_FF', 'co2_PTEN_ocean', 'o2_ATEN_GPP', 'o2_ATEN_TER', 'o2_ATEN_FF', 'o2_ATEN_ocean', 'o2_BASE_GPP', 'o2_BASE_TER', 'o2_BASE_FF', 'o2_BASE_ocean', 'o2_DFIN_GPP', 'o2_DFIN_TER', 'o2_DFIN_FF', 'o2_DFIN_ocean', 'o2_HFRA_GPP', 'o2_HFRA_TER', 'o2_HFRA_FF', 'o2_HFRA_ocean', 'o2_HGER_GPP', 'o2_HGER_TER', 'o2_HGER_FF', 'o2_HGER_ocean', 'o2_PTEN_GPP', 'o2_PTEN_TER', 'o2_PTEN_FF', 'o2_PTEN_ocean'], 'input_record_ids': ['101', '102', '103', '104', '105', '106', '107', '108', '109', '110', '111', '112'], 'source_paths': ['/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_ATEN_co2_fluxes_v2.zarr', '/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_BASE_co2_fluxes_v2.zarr', '/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_DFIN_co2_fluxes_v2.zarr', '/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_HFRA_co2_fluxes_v2.zarr', '/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_HGER_co2_fluxes_v2.zarr', '/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_PTEN_co2_fluxes_v2.zarr', '/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_ATEN_o2_fluxes_v2.zarr', '/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_BASE_o2_fluxes_v2.zarr', '/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_DFIN_o2_fluxes_v2.zarr', '/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_HFRA_o2_fluxes_v2.zarr', '/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_HGER_o2_fluxes_v2.zarr', '/group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_PTEN_o2_fluxes_v2.zarr'], 'nan_policy': 'Flux NaNs filled with 0.0 during staging.', 'units': 'mol m-2 s-1', 'zarr_compressor': {'id': 'blosc', 'cname': 'lz4', 'clevel': 5, 'shuffle': 1, 'blocksize': 0}, 'modifications': 'Stacked PARIS species/scenario/sector fluxes into a single source dimension, converted flux variables to mol m-2 s-1 where necessary, filled flux NaNs with zero, and persisted as chunked Zarr for forward modelling.'}, naming_metadata={'target_kind': 'directory', 'storage_relative_path': 'data/flux/derived/PARIS_CTE-HR_filled_fluxes_staged/zarr_v2/paris_cte-hr_filled_fluxes_EUROPE_flux_stage_from_scenario_zarr_v2_filled_nan_zero_forward_model_input_202012-202112.zarr', 'resolved_directory': '/group/chem/acrg/verification_games_round_2/games_catalog/data/flux/derived/PARIS_CTE-HR_filled_fluxes_staged/zarr_v2', 'resolved_filename': 'paris_cte-hr_filled_fluxes_EUROPE_flux_stage_from_scenario_zarr_v2_filled_nan_zero_forward_model_input_202012-202112.zarr'})
 
 
 ** Optional full NaN check
