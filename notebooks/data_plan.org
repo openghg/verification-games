@@ -52,9 +52,189 @@ from openghg.retrieve import search_footprints, get_footprint
 
 * Footprints
 
+I previously check what object stores have footprint data, and all of the sites we need are in =shared_store_zarr=.
+
 ** Site list
 
+These are the sites that 1) UOB has, 2) WUR is using:
+
+#+begin_src jupyter-python
+site_list = ["BIR", "BSD", "CBW", "CMN", "GAT", "HEI", "HEL", "HFD", "HPB", "HTM", "HUN", "JFJ", "KIT",
+                 "KRE", "LIN", "LUT", "MHD", "NOR", "OPE", "OXK", "PAL", "PUY", "RGL", "SAC", "SSL", "STE",
+                 "TAC", "TOH", "TRN", "UTO", "WAO", "WES"]
+print(len(site_list))
+#+end_src
+
+#+RESULTS:
+: 32
+
+#+begin_src jupyter-python
+co2_fp_res = search_footprints(species="co2", domain="europe", store="shared_store_zarr")
+
+print(co2_fp_res.results.columns)
+print("# sites:", len(co2_fp_res.results.site.unique()))
+print(co2_fp_res.results.site.unique())
+#+end_src
+
+#+RESULTS:
+: Index(['data_type', 'site', 'domain', 'model', 'inlet', 'height', 'species',
+:        'met_model', 'start_date', 'end_date', 'time_period', 'max_longitude',
+:        'min_longitude', 'max_latitude', 'min_latitude', 'time_resolved',
+:        'high_spatial_resolution', 'short_lifetime', 'heights', 'variables',
+:        'uuid', 'latest_version', 'timestamp', 'versions', 'object_store'],
+:       dtype='object')
+: # sites: 31
+: ['bsd' 'hfd' 'rgl' 'tac' 'cmn' 'jfj' 'mhd' 'bir' 'cbw' 'gat' 'hei' 'hel'
+:  'hpb' 'htm' 'hun' 'kit' 'kre' 'lin' 'lut' 'nor' 'ope' 'oxk' 'pal' 'sac'
+:  'ssl' 'ste' 'toh' 'uto' 'wao' 'wes' 'trn']
+
+#+begin_src jupyter-python
+combined_site_list = set(site_list).union(set([s.upper() for s in co2_fp_res.results.site.unique()]))
+in_store = [s.lower() in co2_fp_res.results.site.unique() for s in combined_site_list]
+in_list =  [s in site_list for s in combined_site_list]
+
+site_df = pd.DataFrame({"in_store": in_store, "in_list": in_list}, index=list(combined_site_list))
+print(site_df.sort_index())
+#+end_src
+
+#+RESULTS:
+#+begin_example
+     in_store  in_list
+BIR      True     True
+BSD      True     True
+CBW      True     True
+CMN      True     True
+GAT      True     True
+HEI      True     True
+HEL      True     True
+HFD      True     True
+HPB      True     True
+HTM      True     True
+HUN      True     True
+JFJ      True     True
+KIT      True     True
+KRE      True     True
+LIN      True     True
+LUT      True     True
+MHD      True     True
+NOR      True     True
+OPE      True     True
+OXK      True     True
+PAL      True     True
+PUY     False     True
+RGL      True     True
+SAC      True     True
+SSL      True     True
+STE      True     True
+TAC      True     True
+TOH      True     True
+TRN      True     True
+UTO      True     True
+WAO      True     True
+WES      True     True
+#+end_example
+
+Hmm so there are multiple entries for a site. But this might be due to a change in inlet height.
+
+#+begin_src jupyter-python
+print(co2_fp_res.results[["site", "inlet"]].groupby("site").count())
+#+end_src
+
+#+RESULTS:
+#+begin_example
+      inlet
+site
+bir       1
+bsd       2
+cbw       1
+cmn       1
+gat       1
+hei       1
+hel       1
+hfd       1
+hpb       1
+htm       1
+hun       1
+jfj       1
+kit       1
+kre       1
+lin       1
+lut       1
+mhd       1
+nor       1
+ope       1
+oxk       1
+pal       1
+rgl       1
+sac       1
+ssl       1
+ste       1
+tac       1
+toh       1
+trn       1
+uto       1
+wao       1
+wes       1
+#+end_example
+
+Right, BSD changed from 248m to 250m at some point...
+
+PUY is available on JASMIN, but I need to download and process it.
+
 ** Closer look at MHD
+
+#+begin_src jupyter-python
+mhd_fp = get_footprint(site="mhd", domain="europe", store="shared_store_zarr", species="co2", start_date="2021-01-01", end_date="2021-02-01")
+#+end_src
+
+#+RESULTS:
+
+#+begin_src jupyter-python
+print(mhd_fp.data)
+#+end_src
+
+#+RESULTS:
+#+begin_example
+<xarray.Dataset> Size: 9GB
+Dimensions:                              (time: 720, lat: 293, lon: 391,
+                                          H_back: 25, height: 20)
+Coordinates:
+  ,* H_back                               (H_back) float32 100B 0.0 1.0 ... 24.0
+  ,* height                               (height) float32 80B 500.0 ... 1.95e+04
+  ,* lat                                  (lat) float32 1kB 10.73 10.96 ... 79.06
+  ,* lon                                  (lon) float32 2kB -97.9 ... 39.38
+  ,* time                                 (time) datetime64[ns] 6kB 2021-01-02...
+Data variables: (12/17)
+    air_pressure                         (time) float32 3kB dask.array<chunksize=(24,), meta=np.ndarray>
+    air_temperature                      (time) float32 3kB dask.array<chunksize=(24,), meta=np.ndarray>
+    atmosphere_boundary_layer_thickness  (time) float32 3kB dask.array<chunksize=(24,), meta=np.ndarray>
+    fp                                   (time, lat, lon) float32 330MB dask.array<chunksize=(24, 293, 391), meta=np.ndarray>
+    fp_HiTRes                            (time, lat, lon, H_back) float32 8GB dask.array<chunksize=(24, 293, 391, 25), meta=np.ndarray>
+    mean_age_particles_e                 (time, height, lat) float32 17MB dask.array<chunksize=(24, 20, 293), meta=np.ndarray>
+    ...                                   ...
+    particle_locations_s                 (time, height, lon) float32 23MB dask.array<chunksize=(24, 20, 391), meta=np.ndarray>
+    particle_locations_w                 (time, height, lat) float32 17MB dask.array<chunksize=(24, 20, 293), meta=np.ndarray>
+    release_lat                          (time) float32 3kB dask.array<chunksize=(24,), meta=np.ndarray>
+    release_lon                          (time) float32 3kB dask.array<chunksize=(24,), meta=np.ndarray>
+    wind_from_direction                  (time) float32 3kB dask.array<chunksize=(24,), meta=np.ndarray>
+    wind_speed                           (time) float32 3kB dask.array<chunksize=(24,), meta=np.ndarray>
+Attributes: (12/22)
+    author:                   OpenGHG Cloud
+    data_type:                footprints
+    domain:                   europe
+    end_date:                 2021-12-31 23:59:59+00:00
+    height:                   10m
+    heights:                  [500.0, 1500.0, 2500.0, 3500.0, 4500.0, 5500.0,...
+    ...                       ...
+    site:                     mhd
+    species:                  co2
+    start_date:               2021-12-01 00:00:00+00:00
+    time_period:              1 hour
+    time_resolved:            True
+    variables:                ['fp', 'fp_HiTRes', 'air_temperature', 'air_pre...
+#+end_example
+
+This is the older style where =H_back= has size 25, and the value at index 24 is the "integrated remainder footprint".
 
 ** TODO get PUY footprints
 
