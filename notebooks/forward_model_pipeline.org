@@ -1,14 +1,21 @@
-#+PROPERTY: header-args:jupyter-python :kernel verification-games :session /jpy:localhost#8888:forward-runs :async yes
+#+PROPERTY: header-args:jupyter-python :kernel verification-games :session /jpy:localhost#8888:forward-runs2 :async yes
 
 #+begin_src elisp
 (setq-local org-image-actual-width '(900))
 (setq jupyter-repl-maximum-output 5000)
 #+end_src
 
+#+RESULTS:
+: 5000
+
+
 #+begin_src jupyter-python
 %load_ext autoreload
 %autoreload 2
 #+end_src
+
+#+RESULTS:
+
 
 
 * Forward-model staging pipeline
@@ -51,6 +58,8 @@ from verification_games.run_forward_model import (
 )
 #+end_src
 
+#+RESULTS:
+
 #+begin_src jupyter-python
 VG_PATH = Path("/group/chem/acrg/verification_games_round_2")
 CATALOG_PATH = DEFAULT_CATALOG_PATH
@@ -73,11 +82,62 @@ LOG_DIR = WORK_ROOT / "dask_logs"
 games_cat = open_games_catalog(CATALOG_PATH)
 #+end_src
 
+#+RESULTS:
+
 
 ** Stage all fluxes
-:PROPERTIES:
-:CUSTOM_ID: stage-all-fluxes
-:END:
+*** Checking inputs
+
+#+begin_src jupyter-python
+results = games_cat.search(where={"record_type": "verification_games_flux", "university_abbr": "UOB"}, ignore_case=True, as_record_set=True)
+print(results.to_dataframe(["id", "species", "games_scenario"]).sort_values(["species", "games_scenario"]))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+     id species games_scenario
+6    95     co2           ATEN
+7    96     co2           BASE
+8    97     co2           DFIN
+9    98     co2           HFRA
+10   99     co2           HGER
+11  100     co2           PTEN
+1    90      o2           ATEN
+0    89      o2           BASE
+2    91      o2           DFIN
+3    92      o2           HFRA
+4    93      o2           HGER
+5    94      o2           PTEN
+#+end_example
+
+#+begin_src jupyter-python
+from ogcat import CatalogRecordSet
+
+from verification_games.flux_stage import find_flux_records
+
+
+results2 = CatalogRecordSet(find_flux_records(games_cat))
+print(results2.to_dataframe(["id", "species", "games_scenario"]))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+     id species games_scenario
+0    95     co2           ATEN
+1    96     co2           BASE
+2    97     co2           DFIN
+3    98     co2           HFRA
+4    99     co2           HGER
+5   100     co2           PTEN
+6    90      o2           ATEN
+7    89      o2           BASE
+8    91      o2           DFIN
+9    92      o2           HFRA
+10   93      o2           HGER
+11   94      o2           PTEN
+#+end_example
+
+*** Create combined flux as zarr
 Set =RUN_STAGING = True= when ready. This writes to a temporary Zarr
 directory, validates the staged structure, then moves it into place.
 
@@ -101,8 +161,10 @@ if staged_path.exists():
 else:
     print(f"Staged flux Zarr does not exist yet: {staged_path}")
     summary = None
-summary
+print(summary)
 #+end_src
+
+*** Store in =ogcat=
 
 #+begin_src jupyter-python
 if REGISTER_STAGED_ZARR:
@@ -111,7 +173,7 @@ if REGISTER_STAGED_ZARR:
     if input_records is None:
         input_records = find_flux_records(games_cat)
     staged_record = register_staged_flux_zarr(games_cat, staged_path, input_records)
-    staged_record
+    print(staged_record)
 #+end_src
 
 
