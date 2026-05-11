@@ -23,7 +23,7 @@
 :CUSTOM_ID: forward-model-staging-pipeline
 :END:
 This notebook stages the PARIS fluxes as a source-aware Zarr store,
-registers that store in =games_catalog=, and runs resumable =fp_x_flux=
+registers that store in =games_catalog=, and runs resumable =fp_dot_flux=
 site/month jobs.
 
 #+begin_src jupyter-python
@@ -51,7 +51,7 @@ from verification_games.flux_stage import (
 )
 from verification_games.run_forward_model import (
     AVAILABLE_SHARED_STORE_SITES,
-    compute_fp_x_flux,
+    compute_fp_dot_flux,
     get_month_footprint,
     iter_site_month_runs,
     open_staged_flux,
@@ -77,7 +77,7 @@ STAGED_FLUX_ZARR = (
     / "paris_cte-hr_filled_fluxes_EUROPE_flux_stage_from_scenario_zarr_v2_filled_nan_zero_forward_model_input_202012-202112.zarr"
 )
 STAGED_FLUX_TEMP = WORK_ROOT / "staging_tmp"
-FP_X_FLUX_OUTPUT_DIR = WORK_ROOT / "fp_x_flux"
+FP_DOT_FLUX_OUTPUT_DIR = WORK_ROOT / "fp_dot_flux"
 LOG_DIR = WORK_ROOT / "dask_logs"
 
 SOURCE_FLUX_PROCESSING_STAGE = "scenario_zarr"
@@ -529,14 +529,10 @@ The smoke run uses all staged sources for MHD in January 2021 and writes
 one =time x source= Zarr output.
 
 #+begin_src jupyter-python
-!ls -lha /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_x_flux/mhd
+!ls -lha /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/mhd
 #+end_src
 
 #+RESULTS:
-: total 3.0K
-: drwxrwsr-x 3 bm13805 acrg 4.0K May 11 22:43 .
-: drwxrwsr-x 3 bm13805 acrg 4.0K May 11 22:43 ..
-: drwxrwsr-x 5 bm13805 acrg 4.0K May 11 22:43 .mhd_202101_fp_x_flux.zarr.6c104c3defc84ee7bbaffc00368338cc.tmp
 
 #+begin_src jupyter-python
 CLEAN_STALE_SMOKE_TMP = False
@@ -544,14 +540,13 @@ CLEAN_STALE_SMOKE_TMP = False
 if CLEAN_STALE_SMOKE_TMP:
     import shutil
 
-    smoke_output_dir = FP_X_FLUX_OUTPUT_DIR / "mhd"
-    for tmp_path in smoke_output_dir.glob(".mhd_202101_fp_x_flux.zarr.*.tmp"):
+    smoke_output_dir = FP_DOT_FLUX_OUTPUT_DIR / "mhd"
+    for tmp_path in smoke_output_dir.glob(".mhd_202101_fp_dot_flux.zarr.*.tmp"):
         print(f"Removing stale smoke temp output: {tmp_path}")
         shutil.rmtree(tmp_path)
 #+end_src
 
 #+RESULTS:
-: Removing stale smoke temp output: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_x_flux/mhd/.mhd_202101_fp_x_flux.zarr.6c104c3defc84ee7bbaffc00368338cc.tmp
 
 #+begin_src jupyter-python
 RUN_SMOKE = False
@@ -562,7 +557,7 @@ if RUN_SMOKE:
         start_date="2021-01-01",
         end_date="2021-02-01",
         flux_zarr_path=staged_path,
-        output_dir=FP_X_FLUX_OUTPUT_DIR,
+        output_dir=FP_DOT_FLUX_OUTPUT_DIR,
         time_chunk=24,
         source_chunk=4,
         fillna_zero=False,
@@ -571,10 +566,6 @@ if RUN_SMOKE:
 #+end_src
 
 #+RESULTS:
-: Running fp_x_flux for MHD 2021-01
-: Fetching footprint: {'site': 'mhd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-01-01', 'end_date': '2021-02-01'}
-: Writing fp_x_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_x_flux/mhd/.mhd_202101_fp_x_flux.zarr.49327f3961d640f7a357afca3ec83b5d.tmp
-: Moving fp_x_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_x_flux/mhd/mhd_202101_fp_x_flux.zarr
 
 
 
@@ -589,13 +580,13 @@ of the scenario-level Zarr flux records where NaNs are filled by the
 forward-model helper.
 
 #+begin_src jupyter-python
-RUN_SMOKE_COMPARISON = True
+RUN_SMOKE_COMPARISON = False
 
 if RUN_SMOKE_COMPARISON:
     fp = get_month_footprint(site="MHD", start_date="2021-01-01", end_date="2021-02-01")
 
     staged_flux = open_staged_flux(staged_path)
-    staged_expr = compute_fp_x_flux(
+    staged_expr = compute_fp_dot_flux(
         fp,
         staged_flux,
         time_chunk=24,
@@ -610,7 +601,7 @@ if RUN_SMOKE_COMPARISON:
         data_format=SOURCE_FLUX_FORMAT,
         fill_value=None,
     )
-    raw_expr = compute_fp_x_flux(
+    raw_expr = compute_fp_dot_flux(
         fp,
         raw_flux_ds["flux"],
         time_chunk=24,
@@ -624,112 +615,13 @@ if RUN_SMOKE_COMPARISON:
 #+end_src
 
 #+RESULTS:
-#+begin_example
-Fetching footprint: {'site': 'mhd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-01-01', 'end_date': '2021-02-01'}
-Opening flux record 101: co2 ATEN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_ATEN_co2_fluxes_v2.zarr
-Opening flux record 102: co2 BASE -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_BASE_co2_fluxes_v2.zarr
-Opening flux record 103: co2 DFIN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_DFIN_co2_fluxes_v2.zarr
-Opening flux record 104: co2 HFRA -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_HFRA_co2_fluxes_v2.zarr
-Opening flux record 105: co2 HGER -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_HGER_co2_fluxes_v2.zarr
-Opening flux record 106: co2 PTEN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_PTEN_co2_fluxes_v2.zarr
-Opening flux record 107: o2 ATEN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_ATEN_o2_fluxes_v2.zarr
-Opening flux record 108: o2 BASE -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_BASE_o2_fluxes_v2.zarr
-Opening flux record 109: o2 DFIN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_DFIN_o2_fluxes_v2.zarr
-Opening flux record 110: o2 HFRA -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_HFRA_o2_fluxes_v2.zarr
-Opening flux record 111: o2 HGER -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_HGER_o2_fluxes_v2.zarr
-Opening flux record 112: o2 PTEN -> /group/chem/acrg/verification_games_round_2/games_catalog/data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_PTEN_o2_fluxes_v2.zarr
-Stacking source co2_ATEN_GPP
-Stacking source co2_ATEN_TER
-Stacking source co2_ATEN_FF
-Stacking source co2_ATEN_ocean
-Stacking source co2_BASE_GPP
-Stacking source co2_BASE_TER
-Stacking source co2_BASE_FF
-Stacking source co2_BASE_ocean
-Stacking source co2_DFIN_GPP
-Stacking source co2_DFIN_TER
-Stacking source co2_DFIN_FF
-Stacking source co2_DFIN_ocean
-Stacking source co2_HFRA_GPP
-Stacking source co2_HFRA_TER
-Stacking source co2_HFRA_FF
-Stacking source co2_HFRA_ocean
-Stacking source co2_HGER_GPP
-Stacking source co2_HGER_TER
-Stacking source co2_HGER_FF
-Stacking source co2_HGER_ocean
-Stacking source co2_PTEN_GPP
-Stacking source co2_PTEN_TER
-Stacking source co2_PTEN_FF
-Stacking source co2_PTEN_ocean
-Stacking source o2_ATEN_GPP
-Stacking source o2_ATEN_TER
-Stacking source o2_ATEN_FF
-Stacking source o2_ATEN_ocean
-Stacking source o2_BASE_GPP
-Stacking source o2_BASE_TER
-Stacking source o2_BASE_FF
-Stacking source o2_BASE_ocean
-Stacking source o2_DFIN_GPP
-Stacking source o2_DFIN_TER
-Stacking source o2_DFIN_FF
-Stacking source o2_DFIN_ocean
-Stacking source o2_HFRA_GPP
-Stacking source o2_HFRA_TER
-Stacking source o2_HFRA_FF
-Stacking source o2_HFRA_ocean
-Stacking source o2_HGER_GPP
-Stacking source o2_HGER_TER
-Stacking source o2_HGER_FF
-Stacking source o2_HGER_ocean
-Stacking source o2_PTEN_GPP
-Stacking source o2_PTEN_TER
-Stacking source o2_PTEN_FF
-Stacking source o2_PTEN_ocean
-#+end_example
 
 #+begin_src jupyter-python
-print(staged_result)
+if "staged_result" in globals():
+    print(staged_result)
 #+end_src
 
 #+RESULTS:
-#+begin_example
-<xarray.DataArray 'fp_x_flux' (time: 720, source: 48)> Size: 138kB
-array([[-9.77008696e-08,  1.29905993e-06,  2.90929137e-07, ...,
-        -1.34625975e-06, -4.02863549e-07, -3.72506747e-06],
-       [-1.04271585e-07,  1.20126742e-06,  3.00819693e-07, ...,
-        -1.24524149e-06, -4.20185074e-07, -3.70153271e-06],
-       [-1.15142882e-07,  1.05352683e-06,  2.95262055e-07, ...,
-        -1.09241023e-06, -4.16322962e-07, -3.64958714e-06],
-       ...,
-       [-4.35097178e-07,  6.10312509e-06,  6.41784982e-06, ...,
-        -6.31719922e-06, -6.39067594e-06, -3.17354716e-06],
-       [-4.66753335e-07,  6.49003960e-06,  6.79351888e-06, ...,
-        -6.71817270e-06, -6.77357411e-06, -3.28652823e-06],
-       [-5.16095440e-07,  6.72812439e-06,  7.14464022e-06, ...,
-        -6.96462030e-06, -7.09998858e-06, -3.46011575e-06]],
-      shape=(720, 48), dtype=float32)
-Coordinates:
-  ,* time            (time) datetime64[ns] 6kB 2021-01-02 ... 2021-01-31T23:00:00
-  ,* source          (source) object 384B 'co2_ATEN_GPP' ... 'o2_PTEN_ocean'
-    games_scenario  (source) <U4 768B 'ATEN' 'ATEN' 'ATEN' ... 'PTEN' 'PTEN'
-    sector          (source) <U5 960B 'GPP' 'TER' 'FF' ... 'TER' 'FF' 'ocean'
-    species         (source) <U3 576B 'co2' 'co2' 'co2' 'co2' ... 'o2' 'o2' 'o2'
-Attributes: (12/23)
-    loss_lifetime_hrs:            No loss applied
-    description:                  (footprint * flux).sum('lat', 'lon') interm...
-    fallback_source:              sib4_co2_gpp
-    fallback_source_path:         /group/chem/acrg/verification_games_round_2...
-    fallback_source_record_id:    38
-    long_name:                    GPP CO2 flux for PARIS ATEN
-    ...                           ...
-    units:                        1
-    baseline_status:              not_applied
-    flux_units:                   mol m-2 s-1
-    footprint_units:              m2 s mol-1
-    modifications:                Computed footprint times staged flux and su...
-    history:                      2026-05-11 21:52:42.474790+00:00 bm13805@bp...
-#+end_example
 
 ** Production loop
 :PROPERTIES:
@@ -750,7 +642,7 @@ if RUN_PRODUCTION:
             start_date=start_date,
             end_date=end_date,
             flux_zarr_path=staged_path,
-            output_dir=FP_X_FLUX_OUTPUT_DIR,
+            output_dir=FP_DOT_FLUX_OUTPUT_DIR,
             time_chunk=24,
             source_chunk=4,
             fillna_zero=False,

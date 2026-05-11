@@ -12,7 +12,7 @@ from verification_games.run_forward_model import (
     month_windows,
     open_staged_flux,
     select_flux_sources,
-    write_fp_x_flux_zarr,
+    write_fp_dot_flux_zarr,
 )
 
 EXPECTED_SHARED_STORE_SITE_COUNT = 31
@@ -139,7 +139,7 @@ def test_open_staged_flux_defaults_to_dask_backed_zarr(tmp_path) -> None:
     assert hasattr(flux.data, "__dask_graph__")
 
 
-def test_write_fp_x_flux_zarr_stringifies_mixed_object_coords(tmp_path) -> None:
+def test_write_fp_dot_flux_zarr_stringifies_mixed_object_coords(tmp_path) -> None:
     """Object coords propagated from source metadata must be Zarr UTF8-safe."""
     result = xr.DataArray(
         np.zeros((2, 2), dtype=np.float32),
@@ -148,11 +148,11 @@ def test_write_fp_x_flux_zarr_stringifies_mixed_object_coords(tmp_path) -> None:
             "time": np.array(["2021-01-01T00", "2021-01-01T01"], dtype="datetime64[h]"),
             "source": ("source", np.array(["co2_BASE_GPP", 48], dtype=object)),
         },
-        name="fp_x_flux",
+        name="fp_dot_flux",
     )
-    target = tmp_path / "fp_x_flux.zarr"
+    target = tmp_path / "fp_dot_flux.zarr"
 
-    write_fp_x_flux_zarr(result, target)
+    write_fp_dot_flux_zarr(result, target)
 
     written = xr.open_zarr(target)
     assert list(written["source"].values) == ["co2_BASE_GPP", "48"]

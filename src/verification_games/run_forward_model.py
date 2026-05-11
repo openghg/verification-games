@@ -54,12 +54,13 @@ SITE_LIST = (
     "WES",
 )
 AVAILABLE_SHARED_STORE_SITES = tuple(site for site in SITE_LIST if site != "PUY")
-FP_X_FLUX_UNITS = "1"
+FP_DOT_FLUX_VARIABLE = "fp_dot_flux"
+FP_DOT_FLUX_UNITS = "1"
 EXPECTED_FLUX_UNITS = "mol m-2 s-1"
 EXPECTED_FOOTPRINT_UNITS = "m2 s mol-1"
 SPATIAL_COORD_TOLERANCE = 1e-5
 DEFAULT_ZARR_COMPRESSOR = Blosc(cname="lz4", clevel=5, shuffle=Blosc.SHUFFLE)
-FP_X_FLUX_MODIFICATIONS = (
+FP_DOT_FLUX_MODIFICATIONS = (
     "Computed footprint times staged flux and summed over latitude and longitude; "
     "baseline contribution not applied."
 )
@@ -67,7 +68,7 @@ FP_X_FLUX_MODIFICATIONS = (
 
 @dataclass(frozen=True)
 class ForwardModelRun:
-    """Metadata for one site/month fp_x_flux output."""
+    """Metadata for one site/month fp_dot_flux output."""
 
     site: str
     start_date: str
@@ -227,7 +228,7 @@ def _harmonize_spatial_coords(flux: xr.DataArray, fp: xr.Dataset) -> xr.DataArra
     return flux.assign_coords(updates)
 
 
-def compute_fp_x_flux(
+def compute_fp_dot_flux(
     fp: xr.Dataset,
     flux: xr.DataArray,
     *,
@@ -250,18 +251,19 @@ def compute_fp_x_flux(
         lon_chunk=lon_chunk,
         source_chunk=source_chunk,
     )
-    result.name = "fp_x_flux"
+    result.name = FP_DOT_FLUX_VARIABLE
     result.attrs.update(
         {
-            "description": "(footprint * flux).sum('lat', 'lon') intermediate without baseline contribution.",
+            "description": "Spatial sum of footprint times staged flux; baseline contribution not applied.",
             "baseline_status": "not_applied",
-            "units": FP_X_FLUX_UNITS,
+            "product": "modelled_pollution_event_intermediate",
+            "units": FP_DOT_FLUX_UNITS,
             "flux_units": EXPECTED_FLUX_UNITS,
             "footprint_units": EXPECTED_FOOTPRINT_UNITS,
-            "modifications": FP_X_FLUX_MODIFICATIONS,
+            "modifications": FP_DOT_FLUX_MODIFICATIONS,
         }
     )
-    result.attrs = append_history(result.attrs, FP_X_FLUX_MODIFICATIONS)
+    result.attrs = append_history(result.attrs, FP_DOT_FLUX_MODIFICATIONS)
     return result
 
 
@@ -270,7 +272,7 @@ def zarr_encoding(
     *,
     compressor=DEFAULT_ZARR_COMPRESSOR,
 ) -> dict[str, dict[str, object]]:
-    """Return Zarr encoding for fp_x_flux outputs."""
+    """Return Zarr encoding for fp_dot_flux outputs."""
     return {name: {"compressor": compressor} for name in ds.data_vars}
 
 
@@ -297,13 +299,13 @@ def _zarr_safe_string_coords(ds: xr.Dataset) -> xr.Dataset:
     return ds.assign_coords(updates)
 
 
-def fp_x_flux_output_path(output_dir: str | Path, *, site: str, start_date: str | pd.Timestamp) -> Path:
+def fp_dot_flux_output_path(output_dir: str | Path, *, site: str, start_date: str | pd.Timestamp) -> Path:
     """Return the canonical site/month output path."""
     month = pd.Timestamp(start_date).strftime("%Y%m")
-    return Path(output_dir).expanduser() / site.lower() / f"{site.lower()}_{month}_fp_x_flux.zarr"
+    return Path(output_dir).expanduser() / site.lower() / f"{site.lower()}_{month}_fp_dot_flux.zarr"
 
 
-def write_fp_x_flux_zarr(
+def write_fp_dot_flux_zarr(
     result: xr.DataArray,
     output_path: str | Path,
     *,
@@ -311,7 +313,7 @@ def write_fp_x_flux_zarr(
     consolidated: bool = True,
     compressor=DEFAULT_ZARR_COMPRESSOR,
 ) -> Path:
-    """Write one fp_x_flux output via a temporary sibling directory."""
+    """Write one fp_dot_flux output via a temporary sibling directory."""
     target = Path(output_path).expanduser()
     if target.exists() and not overwrite:
         raise FileExistsError(f"Output already exists: {target}")
@@ -319,7 +321,7 @@ def write_fp_x_flux_zarr(
     tmp = target.parent / f".{target.name}.{uuid4().hex}.tmp"
     target.parent.mkdir(parents=True, exist_ok=True)
     ds = _zarr_safe_string_coords(result.to_dataset())
-    print(f"Writing fp_x_flux temporary Zarr: {tmp}")
+    print(f"Writing fp_dot_flux temporary Zarr: {tmp}")
     try:
         ds.to_zarr(tmp, mode="w", consolidated=consolidated, encoding=zarr_encoding(ds, compressor=compressor))
     except Exception:
@@ -328,12 +330,17 @@ def write_fp_x_flux_zarr(
         raise
 
     if target.exists():
-        print(f"Removing existing fp_x_flux Zarr before overwrite: {target}")
+        print(f"Removing existing fp_dot_flux Zarr before overwrite: {target}")
         shutil.rmtree(target)
 
-    print(f"Moving fp_x_flux Zarr into place: {target}")
+    print(f"Moving fp_dot_flux Zarr into place: {target}")
     shutil.move(str(tmp), str(target))
     return target
+
+
+compute_fp_x_flux = compute_fp_dot_flux
+fp_x_flux_output_path = fp_dot_flux_output_path
+write_fp_x_flux_zarr = write_fp_dot_flux_zarr
 
 
 def write_manifest(run: ForwardModelRun, manifest_path: str | Path | None = None) -> Path:
@@ -365,11 +372,11 @@ def run_site_month(  # noqa: PLR0913
     skip_existing: bool = True,
     overwrite: bool = False,
 ) -> ForwardModelRun:
-    """Run one site/month and write a resumable fp_x_flux Zarr output."""
+    """Run one site/month and write a resumable fp_dot_flux Zarr output."""
     site_upper = site.upper()
-    target = fp_x_flux_output_path(output_dir, site=site_upper, start_date=start_date)
+    target = fp_dot_flux_output_path(output_dir, site=site_upper, start_date=start_date)
     if target.exists() and skip_existing and not overwrite:
-        print(f"Skipping existing fp_x_flux output: {target}")
+        print(f"Skipping existing fp_dot_flux output: {target}")
         return ForwardModelRun(
             site=site_upper,
             start_date=str(pd.Timestamp(start_date).date()),
@@ -387,7 +394,7 @@ def run_site_month(  # noqa: PLR0913
             status="skipped_existing",
         )
 
-    print(f"Running fp_x_flux for {site_upper} {pd.Timestamp(start_date):%Y-%m}")
+    print(f"Running fp_dot_flux for {site_upper} {pd.Timestamp(start_date):%Y-%m}")
     fp = get_month_footprint(
         site=site_upper,
         start_date=start_date,
@@ -399,7 +406,7 @@ def run_site_month(  # noqa: PLR0913
     )
     flux = open_staged_flux(flux_zarr_path)
     flux = select_flux_sources(flux, species=species, scenarios=scenarios, sectors=sectors)
-    result = compute_fp_x_flux(
+    result = compute_fp_dot_flux(
         fp,
         flux,
         time_chunk=time_chunk,
@@ -417,7 +424,7 @@ def run_site_month(  # noqa: PLR0913
             "inlet": "" if inlet is None else inlet,
         }
     )
-    write_fp_x_flux_zarr(result, target, overwrite=overwrite)
+    write_fp_dot_flux_zarr(result, target, overwrite=overwrite)
     run = ForwardModelRun(
         site=site_upper,
         start_date=str(pd.Timestamp(start_date).date()),
