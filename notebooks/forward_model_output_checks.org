@@ -1,7 +1,7 @@
 #+PROPERTY: header-args:jupyter-python :kernel verification-games :session /jpy:localhost#8888:forward-plotting :async yes
 
 #+begin_src elisp
-(setq-local org-image-actual-width '(900))
+(setq-local org-image-actual-width '(1200))
 (setq jupyter-repl-maximum-output 5000)
 #+end_src
 
@@ -834,6 +834,11 @@ for species, ds in auke_base.items():
 #+end_src
 
 #+RESULTS:
+: Auke BASE species: ['co2', 'o2']
+: co2 Frozen({'time': 2190, 'platform': 56, 'sector': 5})
+: platform code 30 = BSD
+: o2 Frozen({'time': 2190, 'platform': 56, 'sector': 5})
+: platform code 30 = BSD
 
 #+begin_src jupyter-python
 for species, ds in auke_base.items():
@@ -842,6 +847,10 @@ for species, ds in auke_base.items():
 #+end_src
 
 #+RESULTS:
+: CO2 time range: 2021-01-01T11:00:00.000000000 to 2021-12-31T16:00:00.000000000
+: mole-fraction variables: ['mf_observed', 'mf_prior', 'mf_observed_minus_background', 'mf_prior_minus_background']
+: O2 time range: 2021-01-01T11:00:00.000000000 to 2021-12-31T16:00:00.000000000
+: mole-fraction variables: ['mf_observed', 'mf_prior', 'mf_observed_minus_background', 'mf_prior_minus_background']
 
 *** Auke base seasonal time series
 :PROPERTIES:
@@ -867,6 +876,10 @@ for species, ds in auke_base.items():
 #+end_src
 
 #+RESULTS:
+:RESULTS:
+[[file:./.ob-jupyter/07e78736c67974953e5dbf04f1da6645796df7c3.png]]
+[[file:./.ob-jupyter/341a75726b41589617ac992abb6bcf5183f8a8a5.png]]
+:END:
 
 *** Auke base diurnal mole-fraction cycle
 :PROPERTIES:
@@ -893,6 +906,10 @@ for species, ds in auke_base.items():
 #+end_src
 
 #+RESULTS:
+:RESULTS:
+[[file:./.ob-jupyter/bbd36b5c31538bc8de47344f359174e78f89fcf0.png]]
+[[file:./.ob-jupyter/cb4f777c9264a7ecd6146bc2335010342daff76a.png]]
+:END:
 
 *** Base comparison with current outputs
 :PROPERTIES:
