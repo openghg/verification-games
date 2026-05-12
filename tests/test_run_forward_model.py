@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 import xarray as xr
 
+from verification_games import run_forward_model
 from verification_games.run_forward_model import (
     AVAILABLE_SHARED_STORE_SITES,
     _harmonize_spatial_coords,
@@ -12,6 +13,7 @@ from verification_games.run_forward_model import (
     month_windows,
     open_staged_flux,
     select_flux_sources,
+    run_site_month_safe,
     write_fp_dot_flux_zarr,
 )
 
@@ -156,3 +158,26 @@ def test_write_fp_dot_flux_zarr_stringifies_mixed_object_coords(tmp_path) -> Non
 
     written = xr.open_zarr(target)
     assert list(written["source"].values) == ["co2_BASE_GPP", "48"]
+
+
+def test_run_site_month_safe_logs_failed_manifest(monkeypatch, tmp_path) -> None:
+    """Production runs should continue after a missing footprint/search failure."""
+
+    def fail_run_site_month(**_kwargs):
+        raise RuntimeError("missing footprint")
+
+    monkeypatch.setattr(run_forward_model, "run_site_month", fail_run_site_month)
+
+    run = run_site_month_safe(
+        site="BSD",
+        start_date="2021-09-01",
+        end_date="2021-10-01",
+        flux_zarr_path="/tmp/staged.zarr",
+        output_dir=tmp_path,
+    )
+
+    manifest = tmp_path / "bsd" / "bsd_202109_fp_dot_flux.manifest.json"
+    assert run.status == "failed"
+    assert run.error_type == "RuntimeError"
+    assert "missing footprint" in run.error_message
+    assert manifest.exists()

@@ -30,6 +30,7 @@ site/month jobs.
 from pathlib import Path
 
 from dask import compute as dask_compute
+from dask.distributed import wait
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -56,6 +57,7 @@ from verification_games.run_forward_model import (
     iter_site_month_runs,
     open_staged_flux,
     run_site_month,
+    run_site_month_safe,
 )
 #+end_src
 
@@ -632,190 +634,59 @@ if "staged_result" in globals():
 :END:
 This skips =PUY= because it is not currently available in the shared
 footprint Zarr store. Existing outputs are skipped by default, so
-interrupted runs can be continued by re-running this cell.
+interrupted runs can be continued by re-running this cell. Missing
+footprints and other per-site/month failures are written as failed
+manifests instead of stopping the whole production loop.
 
 #+begin_src jupyter-python
 RUN_PRODUCTION = True
+PRODUCTION_SOURCE_CHUNK = 16
+PERSIST_STAGED_FLUX = False
 
 if RUN_PRODUCTION:
+    staged_flux_for_run = None
+    if PERSIST_STAGED_FLUX:
+        staged_flux_for_run = open_staged_flux(staged_path)
+        staged_flux_for_run = staged_flux_for_run.chunk(
+            {
+                "time": 24,
+                "source": PRODUCTION_SOURCE_CHUNK,
+                "lat": 293,
+                "lon": 391,
+            }
+        )
+        staged_flux_for_run = client.persist(staged_flux_for_run)
+        wait(staged_flux_for_run)
+
     completed = []
     for site, start_date, end_date in iter_site_month_runs(sites=AVAILABLE_SHARED_STORE_SITES):
-        run = run_site_month(
+        run = run_site_month_safe(
             site=site,
             start_date=start_date,
             end_date=end_date,
             flux_zarr_path=staged_path,
             output_dir=FP_DOT_FLUX_OUTPUT_DIR,
+            staged_flux=staged_flux_for_run,
             time_chunk=24,
-            source_chunk=4,
+            source_chunk=PRODUCTION_SOURCE_CHUNK,
             fillna_zero=False,
             skip_existing=True,
         )
         completed.append(run)
 
     prod_df = pd.DataFrame([run.__dict__ for run in completed])
+    print(prod_df["status"].value_counts(dropna=False))
+    failed_df = prod_df.loc[prod_df["status"] == "failed"]
+    if not failed_df.empty:
+        print(
+            failed_df[
+                ["site", "start_date", "end_date", "error_type", "error_message", "output_path"]
+            ].to_string(index=False)
+        )
 #+end_src
 
 #+RESULTS:
-:RESULTS:
-#+begin_example
-Running fp_dot_flux for BIR 2021-01
-Fetching footprint: {'site': 'bir', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-01-01', 'end_date': '2021-02-01'}
-Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/.bir_202101_fp_dot_flux.zarr.1b195c3fd4214140800db20f0f3bc05e.tmp
-Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/bir_202101_fp_dot_flux.zarr
-Running fp_dot_flux for BIR 2021-02
-Fetching footprint: {'site': 'bir', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-02-01', 'end_date': '2021-03-01'}
-Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/.bir_202102_fp_dot_flux.zarr.cf9d312c0e3c4457aae4e24dfe405b9a.tmp
-Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/bir_202102_fp_dot_flux.zarr
-Running fp_dot_flux for BIR 2021-03
-Fetching footprint: {'site': 'bir', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-03-01', 'end_date': '2021-04-01'}
-Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/.bir_202103_fp_dot_flux.zarr.76707e7d43dc459fac2fdee8d266b394.tmp
-Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/bir_202103_fp_dot_flux.zarr
-Running fp_dot_flux for BIR 2021-04
-Fetching footprint: {'site': 'bir', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-04-01', 'end_date': '2021-05-01'}
-Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/.bir_202104_fp_dot_flux.zarr.1ed0588597c24b13a56877bd446811be.tmp
-Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/bir_202104_fp_dot_flux.zarr
-Running fp_dot_flux for BIR 2021-05
-Fetching footprint: {'site': 'bir', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-05-01', 'end_date': '2021-06-01'}
-Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/.bir_202105_fp_dot_flux.zarr.01902ade2a864412a9b6f17e5323ee2b.tmp
-Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/bir_202105_fp_dot_flux.zarr
-Running fp_dot_flux for BIR 2021-06
-Fetching footprint: {'site': 'bir', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-06-01', 'end_date': '2021-07-01'}
-Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/.bir_202106_fp_dot_flux.zarr.800738de620d42ee813988d5f8b18e77.tmp
-Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/bir_202106_fp_dot_flux.zarr
-Running fp_dot_flux for BIR 2021-07
-Fetching footprint: {'site': 'bir', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-07-01', 'end_date': '2021-08-01'}
-Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/.bir_202107_fp_dot_flux.zarr.9ea171f57e87496499960128f8855440.tmp
-Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/bir_202107_fp_dot_flux.zarr
-Running fp_dot_flux for BIR 2021-08
-Fetching footprint: {'site': 'bir', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-08-01', 'end_date': '2021-09-01'}
-Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/.bir_202108_fp_dot_flux.zarr.03b537f58d154c2aaa4fb1728815a8b8.tmp
-Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/bir_202108_fp_dot_flux.zarr
-Running fp_dot_flux for BIR 2021-09
-Fetching footprint: {'site': 'bir', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-09-01', 'end_date': '2021-10-01'}
-Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/.bir_202109_fp_dot_flux.zarr.7f96a1691b764583930ecf46da66b9b1.tmp
-Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/bir_202109_fp_dot_flux.zarr
-Running fp_dot_flux for BIR 2021-10
-Fetching footprint: {'site': 'bir', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-10-01', 'end_date': '2021-11-01'}
-Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/.bir_202110_fp_dot_flux.zarr.b4a60f5ca6ae456ab4eeb4016e2ddf55.tmp
-Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/bir_202110_fp_dot_flux.zarr
-Running fp_dot_flux for BIR 2021-11
-Fetching footprint: {'site': 'bir', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-11-01', 'end_date': '2021-12-01'}
-Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/.bir_202111_fp_dot_flux.zarr.5c34824ca7f64ae280cc05e3e2667c39.tmp
-Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/bir_202111_fp_dot_flux.zarr
-Running fp_dot_flux for BIR 2021-12
-Fetching footprint: {'site': 'bir', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-12-01', 'end_date': '2022-01-01'}
-Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/.bir_202112_fp_dot_flux.zarr.c7bc1302b8d4435aa687980c6c5ced28.tmp
-Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bir/bir_202112_fp_dot_flux.zarr
-Running fp_dot_flux for BSD 2021-01
-Fetching footprint: {'site': 'bsd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-01-01', 'end_date': '2021-02-01'}
-Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bsd/.bsd_202101_fp_dot_flux.zarr.637a279ab75346ed9547bd281bbb3feb.tmp
-Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bsd/bsd_202101_fp_dot_flux.zarr
-Running fp_dot_flux for BSD 2021-02
-Fetching footprint: {'site': 'bsd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-02-01', 'end_date': '2021-03-01'}
-Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bsd/.bsd_202102_fp_dot_flux.zarr.966236a2792441a5be7ad3a195f54541.tmp
-Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bsd/bsd_202102_fp_dot_flux.zarr
-Running fp_dot_flux for BSD 2021-03
-Fetching footprint: {'site': 'bsd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-03-01', 'end_date': '2021-04-01'}
-Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bsd/.bsd_202103_fp_dot_flux.zarr.bf01bbc88fe646bcafbba209965b8cdb.tmp
-Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bsd/bsd_202103_fp_dot_flux.zarr
-Running fp_dot_flux for BSD 2021-04
-Fetching footprint: {'site': 'bsd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-04-01', 'end_date': '2021-05-01'}
-Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bsd/.bsd_202104_fp_dot_flux.zarr.b22ef7f9783849a7abc41c8059ee18e8.tmp
-Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bsd/bsd_202104_fp_dot_flux.zarr
-Running fp_dot_flux for BSD 2021-05
-Fetching footprint: {'site': 'bsd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-05-01', 'end_date': '2021-06-01'}
-Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bsd/.bsd_202105_fp_dot_flux.zarr.9db0ad53bea44489806d6e2c3fd9ddea.tmp
-Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bsd/bsd_202105_fp_dot_flux.zarr
-Running fp_dot_flux for BSD 2021-06
-Fetching footprint: {'site': 'bsd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-06-01', 'end_date': '2021-07-01'}
-Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bsd/.bsd_202106_fp_dot_flux.zarr.dbcfcfc03be94f34973782108b5f03fa.tmp
-Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bsd/bsd_202106_fp_dot_flux.zarr
-Running fp_dot_flux for BSD 2021-07
-Fetching footprint: {'site': 'bsd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-07-01', 'end_date': '2021-08-01'}
-Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bsd/.bsd_202107_fp_dot_flux.zarr.8a31330223db4bbaa4070764e7758205.tmp
-Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bsd/bsd_202107_fp_dot_flux.zarr
-Running fp_dot_flux for BSD 2021-08
-Fetching footprint: {'site': 'bsd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-08-01', 'end_date': '2021-09-01'}
-Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bsd/.bsd_202108_fp_dot_flux.zarr.3ee9371381ea4b9e94a457b9c0810fd8.tmp
-Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/bsd/bsd_202108_fp_dot_flux.zarr
-Running fp_dot_flux for BSD 2021-09
-Fetching footprint: {'site': 'bsd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-09-01', 'end_date': '2021-10-01'}
-#+end_example
-#+begin_export html
-<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="color: #7fbfbf; text-decoration-color: #7fbfbf">2026-05-11T23:35:29 </span><span style="color: #808000; text-decoration-color: #808000">WARNING </span> WARNING:openghg.retrieve:No data found for the dates given in the       <a href="file:///group/chem/acrg/verification_games_round_2/verification-games/.venv/lib/python3.12/site-packages/openghg/retrieve/_search.py" target="_blank"><span style="color: #7f7f7f; text-decoration-color: #7f7f7f">_search.py</span></a><span style="color: #7f7f7f; text-decoration-color: #7f7f7f">:</span><a href="file:///group/chem/acrg/verification_games_round_2/verification-games/.venv/lib/python3.12/site-packages/openghg/retrieve/_search.py#590" target="_blank"><span style="color: #7f7f7f; text-decoration-color: #7f7f7f">590</span></a>
-<span style="color: #7fbfbf; text-decoration-color: #7fbfbf">                    </span>         shared_store_zarr store, please try a wider search.                     <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">              </span>
-</pre>
-#+end_export
-#+begin_export html
-<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="color: #7fbfbf; text-decoration-color: #7fbfbf">                    </span><span style="color: #800000; text-decoration-color: #800000; font-weight: bold">ERROR   </span> ERROR:openghg.retrieve:Unable to find results for <span style="color: #808000; text-decoration-color: #808000">site</span>=<span style="color: #008000; text-decoration-color: #008000">'bsd'</span>,            <a href="file:///group/chem/acrg/verification_games_round_2/verification-games/.venv/lib/python3.12/site-packages/openghg/retrieve/_access.py" target="_blank"><span style="color: #7f7f7f; text-decoration-color: #7f7f7f">_access.py</span></a><span style="color: #7f7f7f; text-decoration-color: #7f7f7f">:</span><a href="file:///group/chem/acrg/verification_games_round_2/verification-games/.venv/lib/python3.12/site-packages/openghg/retrieve/_access.py#51" target="_blank"><span style="color: #7f7f7f; text-decoration-color: #7f7f7f">51</span></a>
-<span style="color: #7fbfbf; text-decoration-color: #7fbfbf">                    </span>         <span style="color: #808000; text-decoration-color: #808000">domain</span>=<span style="color: #008000; text-decoration-color: #008000">'europe'</span>, <span style="color: #808000; text-decoration-color: #808000">start_date</span>=<span style="color: #008000; text-decoration-color: #008000">'2021-09-01'</span>, <span style="color: #808000; text-decoration-color: #808000">end_date</span>=<span style="color: #008000; text-decoration-color: #008000">'2021-10-01'</span>,         <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">             </span>
-<span style="color: #7fbfbf; text-decoration-color: #7fbfbf">                    </span>         <span style="color: #808000; text-decoration-color: #808000">species</span>=<span style="color: #008000; text-decoration-color: #008000">'co2'</span>, <span style="color: #808000; text-decoration-color: #808000">data_type</span>=<span style="color: #008000; text-decoration-color: #008000">'footprints'</span>, <span style="color: #808000; text-decoration-color: #808000">store</span>=<span style="color: #008000; text-decoration-color: #008000">'shared_store_zarr'</span>         <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">             </span>
-<span style="color: #7fbfbf; text-decoration-color: #7fbfbf">                    </span>         NoneType: <span style="color: #800080; text-decoration-color: #800080; font-style: italic">None</span>                                                           <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">             </span>
-</pre>
-#+end_export
-# [goto error]
-#+begin_example
----------------------------------------------------------------------------
-SearchError                               Traceback (most recent call last)
-Cell In[30], line 6
 
-File /group/chem/acrg/verification_games_round_2/verification-games/src/verification_games/run_forward_model.py:398, in run_site_month(site, start_date, end_date, flux_zarr_path, output_dir, inlet, footprint_domain, footprint_store, footprint_species, species, scenarios, sectors, time_chunk, source_chunk, fillna_zero, skip_existing, overwrite)
-    380     return ForwardModelRun(
-    381         site=site_upper,
-    382         start_date=str(pd.Timestamp(start_date).date()),
-   (...)    394         status="skipped_existing",
-    395     )
-    397 print(f"Running fp_dot_flux for {site_upper} {pd.Timestamp(start_date):%Y-%m}")
---> 398 fp = get_month_footprint(
-    399     site=site_upper,
-    400     start_date=start_date,
-    401     end_date=end_date,
-    402     domain=footprint_domain,
-    403     store=footprint_store,
-    404     species=footprint_species,
-    405     inlet=inlet,
-    406 )
-    407 flux = open_staged_flux(flux_zarr_path)
-    408 flux = select_flux_sources(flux, species=species, scenarios=scenarios, sectors=sectors)
-
-File /group/chem/acrg/verification_games_round_2/verification-games/src/verification_games/run_forward_model.py:182, in get_month_footprint(site, start_date, end_date, domain, store, species, inlet)
-    180     kwargs["inlet"] = inlet
-    181 print(f"Fetching footprint: {kwargs}")
---> 182 fp = footprint_dataset_from_openghg(get_footprint(**kwargs))
-    183 _validate_footprint_units(fp)
-    184 return fp
-
-File /group/chem/acrg/verification_games_round_2/verification-games/.venv/lib/python3.12/site-packages/openghg/retrieve/_access.py:561, in get_footprint(domain, site, satellite, obs_region, inlet, height, model, start_date, end_date, species, target_units, is_dequantified, **kwargs)
-    558 inlet = format_inlet(inlet)
-    559 height = format_inlet(height)
---> 561 fp_data = _get_generic(
-    562     site=site,
-    563     domain=domain,
-    564     satellite=satellite,
-    565     obs_region=obs_region,
-    566     inlet=inlet,
-    567     height=height,
-    568     model=model,
-    569     start_date=start_date,
-    570     end_date=end_date,
-    571     species=species,
-    572     data_type="footprints",
-    573     **kwargs,
-    574 )
-    576 fp_data.data = assign_units(data=fp_data.data, target_units=target_units, is_dequantified=is_dequantified)
-    577 return FootprintData(data=fp_data.data, metadata=fp_data.metadata)
-
-File /group/chem/acrg/verification_games_round_2/verification-games/.venv/lib/python3.12/site-packages/openghg/retrieve/_access.py:52, in _get_generic(combine_multiple_inlets, ambig_check_params, **kwargs)
-     50     err_msg = f"Unable to find results for {keyword_string}"
-     51     logger.exception(err_msg)
----> 52     raise SearchError(err_msg)
-     54 # TODO: UPDATE THIS - just use retrieve when retrieve_all is removed.
-     55 retrieved_data = results.retrieve_all()
-
-SearchError: Unable to find results for site='bsd', domain='europe', start_date='2021-09-01', end_date='2021-10-01', species='co2', data_type='footprints', store='shared_store_zarr'
-#+end_example
-:END:
 Started around 23:15 on 11 May 2026.
 
 #+begin_src jupyter-python

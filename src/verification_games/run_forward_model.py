@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 import json
 from pathlib import Path
 import shutil
+import traceback
 from uuid import uuid4
 
 from forward_model_tests.mod_obs_functions import fp_x_flux_sum_space_numba
@@ -84,6 +85,9 @@ class ForwardModelRun:
     fillna_zero: bool
     created_at: str
     status: str
+    error_type: str | None = None
+    error_message: str | None = None
+    error_traceback: str | None = None
 
 
 def month_windows(
@@ -359,6 +363,7 @@ def run_site_month(  # noqa: PLR0913
     end_date: str | pd.Timestamp,
     flux_zarr_path: str | Path,
     output_dir: str | Path,
+    staged_flux: xr.DataArray | None = None,
     inlet: str | None = None,
     footprint_domain: str = "europe",
     footprint_store: str = "shared_store_zarr",
@@ -404,7 +409,7 @@ def run_site_month(  # noqa: PLR0913
         species=footprint_species,
         inlet=inlet,
     )
-    flux = open_staged_flux(flux_zarr_path)
+    flux = staged_flux if staged_flux is not None else open_staged_flux(flux_zarr_path)
     flux = select_flux_sources(flux, species=species, scenarios=scenarios, sectors=sectors)
     result = compute_fp_dot_flux(
         fp,
@@ -443,6 +448,81 @@ def run_site_month(  # noqa: PLR0913
     )
     write_manifest(run)
     return run
+
+
+def run_site_month_safe(  # noqa: PLR0913
+    *,
+    site: str,
+    start_date: str | pd.Timestamp,
+    end_date: str | pd.Timestamp,
+    flux_zarr_path: str | Path,
+    output_dir: str | Path,
+    staged_flux: xr.DataArray | None = None,
+    inlet: str | None = None,
+    footprint_domain: str = "europe",
+    footprint_store: str = "shared_store_zarr",
+    footprint_species: str = "co2",
+    species: Sequence[str] | None = None,
+    scenarios: Sequence[str] | None = None,
+    sectors: Sequence[str] | None = None,
+    time_chunk: int = 24,
+    source_chunk: int = 4,
+    fillna_zero: bool = False,
+    skip_existing: bool = True,
+    overwrite: bool = False,
+) -> ForwardModelRun:
+    """Run one site/month, logging failures as manifests instead of raising."""
+    try:
+        return run_site_month(
+            site=site,
+            start_date=start_date,
+            end_date=end_date,
+            flux_zarr_path=flux_zarr_path,
+            output_dir=output_dir,
+            staged_flux=staged_flux,
+            inlet=inlet,
+            footprint_domain=footprint_domain,
+            footprint_store=footprint_store,
+            footprint_species=footprint_species,
+            species=species,
+            scenarios=scenarios,
+            sectors=sectors,
+            time_chunk=time_chunk,
+            source_chunk=source_chunk,
+            fillna_zero=fillna_zero,
+            skip_existing=skip_existing,
+            overwrite=overwrite,
+        )
+    except (KeyboardInterrupt, SystemExit):
+        raise
+    except Exception as exc:
+        site_upper = site.upper()
+        target = fp_dot_flux_output_path(output_dir, site=site_upper, start_date=start_date)
+        run = ForwardModelRun(
+            site=site_upper,
+            start_date=str(pd.Timestamp(start_date).date()),
+            end_date=str(pd.Timestamp(end_date).date()),
+            output_path=str(target),
+            flux_zarr_path=str(flux_zarr_path),
+            footprint_store=footprint_store,
+            footprint_domain=footprint_domain,
+            footprint_species=footprint_species,
+            inlet=inlet,
+            time_chunk=time_chunk,
+            source_chunk=source_chunk,
+            fillna_zero=fillna_zero,
+            created_at=datetime.now(UTC).isoformat(),
+            status="failed",
+            error_type=type(exc).__name__,
+            error_message=str(exc),
+            error_traceback=traceback.format_exc(),
+        )
+        write_manifest(run)
+        print(
+            "Failed fp_dot_flux for "
+            f"{site_upper} {pd.Timestamp(start_date):%Y-%m}: {run.error_type}: {run.error_message}"
+        )
+        return run
 
 
 def iter_site_month_runs(
