@@ -765,7 +765,7 @@ print(list(auke_base_co2.platform).index("BSD"))
 AUKE_SITE = "BSD"
 AUKE_IDENTIFIER = 30
 AUKE_SCENARIO = "BASE"
-AUKE_MF_VARIABLES = ("mf_observed", "mf_prior", "mf_observed_minus_background", "mf_prior_minus_background")
+AUKE_MF_VARIABLES = ("mf_observed", "mf_observed_minus_background")
 
 
 def open_auke_base_records():
@@ -800,14 +800,6 @@ def select_auke_site(ds, *, identifier=AUKE_IDENTIFIER):
 def add_auke_enhancement_variables(ds):
     ds = ds.copy()
     if "background" in ds:
-        if "mf_prior" in ds:
-            ds["mf_prior_minus_background"] = ds["mf_prior"] - ds["background"]
-            ds["mf_prior_minus_background"].attrs.update(
-                {
-                    "long_name": "mf_prior minus background",
-                    "units": ds["mf_prior"].attrs.get("units", ""),
-                }
-            )
         if "mf_observed" in ds:
             ds["mf_observed_minus_background"] = ds["mf_observed"] - ds["background"]
             ds["mf_observed_minus_background"].attrs.update(
@@ -848,9 +840,9 @@ for species, ds in auke_base.items():
 
 #+RESULTS:
 : CO2 time range: 2021-01-01T11:00:00.000000000 to 2021-12-31T16:00:00.000000000
-: mole-fraction variables: ['mf_observed', 'mf_prior', 'mf_observed_minus_background', 'mf_prior_minus_background']
+: mole-fraction variables: ['mf_observed', 'mf_observed_minus_background']
 : O2 time range: 2021-01-01T11:00:00.000000000 to 2021-12-31T16:00:00.000000000
-: mole-fraction variables: ['mf_observed', 'mf_prior', 'mf_observed_minus_background', 'mf_prior_minus_background']
+: mole-fraction variables: ['mf_observed', 'mf_observed_minus_background']
 
 *** Auke base seasonal time series
 :PROPERTIES:
@@ -860,7 +852,7 @@ for species, ds in auke_base.items():
 #+begin_src jupyter-python
 for species, ds in auke_base.items():
     variables = [name for name in AUKE_MF_VARIABLES if name in ds]
-    fig, axes = plt.subplots(len(variables), 1, sharex=True, figsize=(13, 2.6 * len(variables)))
+    fig, axes = plt.subplots(len(variables), 1, sharex=True, figsize=(13, 3.0 * len(variables)))
     axes = np.atleast_1d(axes)
 
     for ax, name in zip(axes, variables, strict=True):
@@ -877,8 +869,8 @@ for species, ds in auke_base.items():
 
 #+RESULTS:
 :RESULTS:
-[[file:./.ob-jupyter/07e78736c67974953e5dbf04f1da6645796df7c3.png]]
-[[file:./.ob-jupyter/341a75726b41589617ac992abb6bcf5183f8a8a5.png]]
+[[file:./.ob-jupyter/bd4a09a1fbbbf384254dad391c68125ef1dae258.png]]
+[[file:./.ob-jupyter/5d45ed2396bd289c33c4f22e0ce516850c389b15.png]]
 :END:
 
 *** Auke base diurnal mole-fraction cycle
@@ -888,8 +880,8 @@ for species, ds in auke_base.items():
 
 #+begin_src jupyter-python
 for species, ds in auke_base.items():
-    variables = [name for name in ("mf_observed", "mf_prior", "mf_observed_minus_background", "mf_prior_minus_background") if name in ds]
-    fig, axes = plt.subplots(1, len(variables), figsize=(4.8 * len(variables), 4), sharey=False)
+    variables = [name for name in AUKE_MF_VARIABLES if name in ds]
+    fig, axes = plt.subplots(1, len(variables), figsize=(6.5 * len(variables), 4), sharey=False)
     axes = np.atleast_1d(axes)
 
     for ax, name in zip(axes, variables, strict=True):
@@ -907,8 +899,8 @@ for species, ds in auke_base.items():
 
 #+RESULTS:
 :RESULTS:
-[[file:./.ob-jupyter/bbd36b5c31538bc8de47344f359174e78f89fcf0.png]]
-[[file:./.ob-jupyter/cb4f777c9264a7ecd6146bc2335010342daff76a.png]]
+[[file:./.ob-jupyter/61c3fb7bcc2e13688ce7245e12ca6643959eff42.png]]
+[[file:./.ob-jupyter/bbf3dc6e4f19d4ede807c7ecf8b7a98cadfe0d5c.png]]
 :END:
 
 *** Base comparison with current outputs
@@ -962,13 +954,13 @@ def compare_daily_auke_variable(species, variable):
 
 #+RESULTS:
 
-Raw =mf_prior= includes the background term, while the current
+Raw =mf_observed= includes the background term, while the current
 =fp_dot_flux= output does not include a baseline. The most direct
-comparison here is therefore expected to be =mf_prior_minus_background=.
+comparison here is therefore expected to be =mf_observed_minus_background=.
 
 #+begin_src jupyter-python
 COMPARE_SPECIES = "co2"
-COMPARE_VARIABLES = ("mf_prior_minus_background", "mf_observed_minus_background", "mf_prior", "mf_observed")
+COMPARE_VARIABLES = ("mf_observed_minus_background", "mf_observed")
 
 available = [
     variable
@@ -993,12 +985,13 @@ plt.show()
 #+end_src
 
 #+RESULTS:
+[[file:./.ob-jupyter/13a21e0017fc3f5ca97df086a794ce390b02cfc5.png]]
 
 #+begin_src jupyter-python
 COMPARE_SPECIES = "co2"
-COMPARE_VARIABLES = ("mf_prior_minus_background", "mf_observed_minus_background")
+COMPARE_VARIABLES = ("mf_observed_minus_background",)
 
-fig, axes = plt.subplots(1, len(COMPARE_VARIABLES), figsize=(13, 4), sharey=False)
+fig, axes = plt.subplots(1, len(COMPARE_VARIABLES), figsize=(7, 4), sharey=False)
 axes = np.atleast_1d(axes)
 
 for ax, variable in zip(axes, COMPARE_VARIABLES, strict=True):
@@ -1022,3 +1015,4 @@ plt.show()
 #+end_src
 
 #+RESULTS:
+[[file:./.ob-jupyter/d43839c1d3be3d2aca5f5e4369deb69a5e546841.png]]
