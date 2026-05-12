@@ -1775,3 +1775,13 @@ CatalogRecord(catalog='games-catalog',
                                'resolved_filename': 'co2_EUROPE_CORSO_v2025_202012-202112.nc',
                                'storage_relative_path': 'boundary_conditions/EUROPE/co2/CORSO_v2025/co2_EUROPE_CORSO_v2025_202012-202112.nc'})
 #+end_example
+
+#+begin_src jupyter-python
+cat_bc_path = Path(games_cat.get("72").locator.value).parent
+
+!ls -lh {cat_bc_path}
+#+end_src
+
+#+RESULTS:
+: total 163M
+: -rw-rw-r-- 1 bm13805 acrg 163M May  7 14:58 co2_EUROPE_CORSO_v2025_202012-202112.nc
