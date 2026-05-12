@@ -1436,3 +1436,379 @@ Attributes:
 
 - [ ] store raw .zarr results by moving them into =ogcat= managed storage
 - [ ] consider a derived product split by scenario, with all sites stacked (closer to Auke's format)
+
+** Move raw baseline Zarr outputs into managed catalog storage
+:PROPERTIES:
+:CUSTOM_ID: move-raw-baseline-zarr-outputs-into-managed-catalog-storage
+:END:
+This registers the site-level baseline intermediates as
+=verification_games_obs= records and moves the raw =.zarr= directories under
+=games_catalog/data=. These are still intermediate baseline products, not the
+final baseline-adjusted observation files.
+
+The first block imports the small pieces of =ogcat= needed for explicit path
+planning. =ArtifactLocator= records where the artifact lives, while
+=plan_storage= records the storage decision separately from the catalog write.
+
+#+begin_src jupyter-python
+from ogcat.models import ArtifactLocator
+from ogcat.storage import plan_storage
+#+end_src
+
+#+RESULTS:
+
+These constants define the batch we are registering. The target root is kept
+under =verification_games_obs/UOB= so these records use the existing
+=verification_games_obs= schema, while the =modelled_baseline/raw_zarr= path
+component keeps this intermediate separate from final observation products.
+
+#+begin_src jupyter-python
+BASELINE_OGCAT_REL_ROOT = Path("verification_games_obs") / "UOB" / "modelled_baseline" / "raw_zarr"
+BASELINE_OGCAT_START = "2021-01-01"
+BASELINE_OGCAT_END = "2022-01-01"
+BASELINE_OGCAT_SITES = PRODUCTION_SITES
+#+end_src
+
+#+RESULTS:
+
+These helpers define the filesystem mapping. The source path is the current
+scratch/intermediate Zarr output. The relative path is where the directory
+should live inside =games_catalog/data=. Keeping these as separate helpers
+makes the dry-run table and the registration function use the same path logic.
+
+#+begin_src jupyter-python
+def catalog_files_root(catalog) -> Path:
+    return Path(catalog.describe()["files_root"])
+
+
+def baseline_source_zarr_path(
+    *,
+    site: str,
+    start_date: str | pd.Timestamp = BASELINE_OGCAT_START,
+    end_date: str | pd.Timestamp = BASELINE_OGCAT_END,
+) -> Path:
+    return baseline_output_path(BASELINE_OUTPUT_DIR, site=site, start_date=start_date, end_date=end_date)
+
+
+def baseline_ogcat_relative_path(source_path: str | Path, *, site: str) -> Path:
+    return BASELINE_OGCAT_REL_ROOT / site.lower() / Path(source_path).name
+
+
+def baseline_ogcat_target_path(catalog, source_path: str | Path, *, site: str) -> Path:
+    return catalog_files_root(catalog) / baseline_ogcat_relative_path(source_path, site=site)
+#+end_src
+
+#+RESULTS:
+
+This creates an explicit =StoragePlan= for the target directory. The plan says
+the artifact is directory-shaped, that it is intended to be moved into catalog
+storage, and that =ogcat= should treat the resulting location as managed. Using
+an explicit plan avoids relying on filename-template rendering for a Zarr
+directory.
+
+#+begin_src jupyter-python
+def baseline_ogcat_storage_plan(catalog, source_path: str | Path, *, site: str):
+    rel_path = baseline_ogcat_relative_path(source_path, site=site)
+    target_path = catalog_files_root(catalog) / rel_path
+    return plan_storage(
+        ArtifactLocator.path(target_path, relative_path=f"data/{rel_path.as_posix()}"),
+        target_kind="directory",
+        write_mode="move",
+        ogcat_owned=True,
+        storage_relative_path=rel_path.as_posix(),
+        resolved_directory=rel_path.parent.as_posix(),
+        resolved_filename=rel_path.name,
+    )
+#+end_src
+
+#+RESULTS:
+
+The next helpers collect metadata for the catalog record. The run manifest is
+the JSON sidecar written during the baseline run. The =verification_games_obs=
+schema requires fields such as =species=, =domain=, =games_scenario=,
+=flux_product=, =footprint_model=, =inputs=, and =university_abbr=; additional
+fields make this intermediate easier to search directly.
+
+#+begin_src jupyter-python
+def baseline_run_manifest_for_source(source_path: str | Path) -> dict:
+    manifest_path = manifest_path_for_output(source_path)
+    if not manifest_path.exists():
+        return {}
+    return json.loads(manifest_path.read_text())
+
+
+def baseline_record_time_bounds(
+    *,
+    start_date: str | pd.Timestamp = BASELINE_OGCAT_START,
+    end_date: str | pd.Timestamp = BASELINE_OGCAT_END,
+) -> tuple[str, str]:
+    start = pd.Timestamp(start_date).strftime("%Y-%m-%d")
+    end = pd.Timestamp(end_date).strftime("%Y-%m-%d")
+    return start, end
+
+
+def baseline_obs_metadata(
+    *,
+    site: str,
+    source_path: str | Path,
+    manifest: dict | None = None,
+    start_date: str | pd.Timestamp = BASELINE_OGCAT_START,
+    end_date: str | pd.Timestamp = BASELINE_OGCAT_END,
+) -> dict:
+    manifest = {} if manifest is None else manifest
+    start, end = baseline_record_time_bounds(start_date=start_date, end_date=end_date)
+    boundary_condition_record_ids = manifest.get("boundary_condition_record_ids", [])
+    return {
+        "species": "co2_o2",
+        "domain": FOOTPRINT_DOMAIN.upper(),
+        "games_scenario": "ALL",
+        "flux_product": "CORSO_boundary_conditions",
+        "footprint_model": "NAME",
+        "inputs": boundary_condition_record_ids,
+        "university_abbr": "UOB",
+        "year": "2021",
+        "site": site.upper(),
+        "start_date": start,
+        "end_date": end,
+        "product": BASELINE_PRODUCT,
+        "data_product": BASELINE_VARIABLE,
+        "keywords": sorted(set([*BASELINE_KEYWORDS, "baseline", "raw_zarr"])),
+        "storage_level": "intermediate",
+        "source_path_before_catalog_move": str(source_path),
+    }
+#+end_src
+
+#+RESULTS:
+
+Derived metadata is information extracted from the Zarr itself, not metadata
+needed to choose the catalog path. This records how to reopen the artifact,
+variable names, sizes, chunking, units, coordinates, and the run manifest. The
+baseline history is stored as =modifications= to mirror the convention used
+elsewhere in these notebooks.
+
+#+begin_src jupyter-python
+def baseline_zarr_derived_metadata(path: str | Path, *, manifest: dict | None = None) -> dict:
+    manifest = {} if manifest is None else manifest
+    ds = xr.open_zarr(path, chunks={})
+    chunks = {}
+    for name, data in ds.data_vars.items():
+        data_chunks = getattr(data.data, "chunks", None)
+        if data_chunks is not None:
+            chunks[name] = {
+                dim: max(chunk_sizes)
+                for dim, chunk_sizes in zip(data.dims, data_chunks, strict=True)
+            }
+
+    return json_safe(
+        {
+            "reader_hint": "xarray.open_zarr",
+            "target_kind": "directory",
+            "output_variables": list(ds.data_vars),
+            "sizes": dict(ds.sizes),
+            "chunks": chunks,
+            "units": {
+                name: data.attrs.get("units", "")
+                for name, data in ds.data_vars.items()
+            },
+            "source_coordinates": list(ds.coords),
+            "run_manifest": manifest,
+            "modifications": ds.attrs.get("history", ""),
+            "description": (
+                "Raw site-level modelled_baseline Zarr intermediate. "
+                "This contains baseline only; flux contributions have not been added."
+            ),
+        }
+    )
+#+end_src
+
+#+RESULTS:
+
+Before moving anything, this helper checks whether the same site and time
+window have already been registered as a baseline intermediate. This makes the
+write cell safe to re-run.
+
+#+begin_src jupyter-python
+def find_existing_baseline_ogcat_record(
+    catalog,
+    *,
+    site: str,
+    start_date: str | pd.Timestamp = BASELINE_OGCAT_START,
+    end_date: str | pd.Timestamp = BASELINE_OGCAT_END,
+):
+    start, end = baseline_record_time_bounds(start_date=start_date, end_date=end_date)
+    matches = catalog.search(
+        where={
+            "record_type": "verification_games_obs",
+            "site": site.upper(),
+            "product": BASELINE_PRODUCT,
+            "data_product": BASELINE_VARIABLE,
+            "start_date": start,
+            "end_date": end,
+        },
+        contains={"keywords": "baseline"},
+        ignore_case=True,
+    )
+    return matches[0] if matches else None
+#+end_src
+
+#+RESULTS:
+
+This helper performs the actual filesystem move. It is deliberately strict: if
+both source and target directories exist, the state is ambiguous and the
+function refuses to continue. If only the target exists, it reports that so a
+record can still be created for a directory that was already moved.
+
+#+begin_src jupyter-python
+def move_baseline_zarr_to_catalog_target(source_path: str | Path, target_path: str | Path) -> str:
+    source_path = Path(source_path)
+    target_path = Path(target_path)
+    if target_path.exists():
+        if source_path.exists():
+            raise FileExistsError(
+                "Refusing to register ambiguous baseline Zarr state because both "
+                f"source and target exist: {source_path} -> {target_path}"
+            )
+        return "target_already_exists"
+    if not source_path.exists():
+        raise FileNotFoundError(f"Neither source nor target exists for baseline Zarr: {source_path}")
+
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(source_path), str(target_path))
+    return "moved"
+#+end_src
+
+#+RESULTS:
+
+This is the registration function. It combines the pieces above: check for an
+existing record, resolve source and target paths, move the directory, extract
+metadata from the stored Zarr, and create the =verification_games_obs= record
+using =Catalog.add_artifact=. The record gets the keyword =baseline= through
+=baseline_obs_metadata=.
+
+#+begin_src jupyter-python
+def add_baseline_zarr_to_ogcat(
+    catalog,
+    *,
+    site: str,
+    start_date: str | pd.Timestamp = BASELINE_OGCAT_START,
+    end_date: str | pd.Timestamp = BASELINE_OGCAT_END,
+    skip_existing: bool = True,
+):
+    existing = find_existing_baseline_ogcat_record(
+        catalog,
+        site=site,
+        start_date=start_date,
+        end_date=end_date,
+    )
+    if existing is not None and skip_existing:
+        print(f"Skipping existing baseline ogcat record for {site.upper()}: {existing.id}")
+        return existing, "skipped_existing_record"
+
+    source_path = baseline_source_zarr_path(site=site, start_date=start_date, end_date=end_date)
+    target_path = baseline_ogcat_target_path(catalog, source_path, site=site)
+    manifest = baseline_run_manifest_for_source(source_path)
+
+    move_status = move_baseline_zarr_to_catalog_target(source_path, target_path)
+    stored_path = target_path
+    metadata = baseline_obs_metadata(
+        site=site,
+        source_path=source_path,
+        manifest=manifest,
+        start_date=start_date,
+        end_date=end_date,
+    )
+    storage_plan = baseline_ogcat_storage_plan(catalog, source_path, site=site)
+    rel_path = baseline_ogcat_relative_path(source_path, site=site)
+    naming_metadata = {
+        "target_kind": "directory",
+        "storage_relative_path": rel_path.as_posix(),
+        "resolved_directory": rel_path.parent.as_posix(),
+        "resolved_filename": rel_path.name,
+    }
+    derived_metadata = baseline_zarr_derived_metadata(stored_path, manifest=manifest)
+    derived_metadata["catalog_move_status"] = move_status
+
+    record = catalog.add_artifact(
+        record_type="verification_games_obs",
+        storage_plan=storage_plan,
+        metadata=metadata,
+        storage_mode="move",
+        original_path=str(source_path),
+        original_filename=source_path.name,
+        suffixes=[".zarr"],
+        derived_metadata=derived_metadata,
+        naming_metadata=naming_metadata,
+    )
+    print(f"Registered {site.upper()} baseline Zarr: record {record.id} -> {stored_path}")
+    return record, move_status
+#+end_src
+
+#+RESULTS:
+
+The dry-run table is the first cell to run before enabling the move. It shows,
+for each site, whether the source Zarr exists, whether the target catalog path
+already exists, and whether a matching catalog record is already present.
+
+#+begin_src jupyter-python
+baseline_ogcat_plan_df = pd.DataFrame(
+    [
+        {
+            "site": site.upper(),
+            "source_path": str(source_path := baseline_source_zarr_path(site=site)),
+            "source_exists": source_path.exists(),
+            "target_path": str(target_path := baseline_ogcat_target_path(games_cat, source_path, site=site)),
+            "target_exists": target_path.exists(),
+            "existing_record_id": (
+                None
+                if (
+                    existing := find_existing_baseline_ogcat_record(
+                        games_cat,
+                        site=site,
+                        start_date=BASELINE_OGCAT_START,
+                        end_date=BASELINE_OGCAT_END,
+                    )
+                )
+                is None
+                else existing.id
+            ),
+        }
+        for site in BASELINE_OGCAT_SITES
+    ]
+)
+print(baseline_ogcat_plan_df.to_string(index=False))
+#+end_src
+
+#+RESULTS:
+
+The final cell is the only one that mutates storage or the catalog. It is
+guarded by =MOVE_BASELINE_ZARR_TO_OGCAT=. Leave that flag as =False= while
+reviewing the dry-run table; set it to =True= only when the planned source and
+target paths look correct.
+
+#+begin_src jupyter-python
+MOVE_BASELINE_ZARR_TO_OGCAT = False
+
+if MOVE_BASELINE_ZARR_TO_OGCAT:
+    baseline_ogcat_records = []
+    for site in BASELINE_OGCAT_SITES:
+        record, move_status = add_baseline_zarr_to_ogcat(
+            games_cat,
+            site=site,
+            start_date=BASELINE_OGCAT_START,
+            end_date=BASELINE_OGCAT_END,
+            skip_existing=True,
+        )
+        baseline_ogcat_records.append(
+            {
+                "site": site.upper(),
+                "record_id": record.id,
+                "move_status": move_status,
+                "path": str(record.path()),
+            }
+        )
+
+    baseline_ogcat_records_df = pd.DataFrame(baseline_ogcat_records)
+    print(baseline_ogcat_records_df.to_string(index=False))
+#+end_src
+
+#+RESULTS:
