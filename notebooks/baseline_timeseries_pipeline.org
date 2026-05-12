@@ -1,0 +1,978 @@
+#+PROPERTY: header-args:jupyter-python :kernel verification-games :session /jpy:localhost#8888:baseline-runs2 :async yes
+
+#+begin_src elisp
+(setq-local org-image-actual-width '(900))
+(setq jupyter-repl-maximum-output 5000)
+#+end_src
+
+#+RESULTS:
+: 5000
+
+
+#+begin_src jupyter-python
+%load_ext autoreload
+%autoreload 2
+#+end_src
+
+#+RESULTS:
+
+
+* Boundary-condition baseline pipeline
+:PROPERTIES:
+:CUSTOM_ID: boundary-condition-baseline-pipeline
+:END:
+This notebook creates intermediate =modelled_baseline= time series from
+CORSO boundary-condition fields and NAME particle-location footprints.
+
+The output is not the final =verification_games_obs= product. It is a
+baseline intermediate intended to be joined with the existing flux
+forward-run outputs later.
+
+Current assumption: the boundary-condition records are species-specific
+but not scenario- or sector-specific. To make later joins simple, this
+notebook repeats the same species baseline across the PARIS scenario and
+sector labels used by the flux forward runs.
+
+#+begin_src jupyter-python
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
+import json
+import logging
+from pathlib import Path
+import shutil
+import traceback
+from uuid import uuid4
+
+from dask.distributed import wait
+import numpy as np
+from numcodecs import Blosc
+import pandas as pd
+import xarray as xr
+
+from verification_games.cluster import (
+    load_slurm_account,
+    make_slurm_cluster,
+    wait_for_workers,
+)
+from verification_games.flux_stage import (
+    DEFAULT_CATALOG_PATH,
+    DEFAULT_SCENARIOS,
+    DEFAULT_SECTORS,
+    open_games_catalog,
+    source_label,
+)
+from verification_games.metadata import append_history
+from verification_games.run_forward_model import (
+    AVAILABLE_SHARED_STORE_SITES,
+    month_windows,
+)
+#+end_src
+
+#+RESULTS:
+
+#+begin_src jupyter-python
+OPENGHG_LOGGERS = ("openghg", "openghg.retrieve", "openghg.analyse")
+
+for logger_name in OPENGHG_LOGGERS:
+    logger = logging.getLogger(logger_name)
+    logger.setLevel(logging.CRITICAL)
+    logger.propagate = False
+    for handler in logger.handlers:
+        handler.setLevel(logging.CRITICAL)
+
+print("Suppressed OpenGHG log output below CRITICAL.")
+#+end_src
+
+#+RESULTS:
+: Suppressed OpenGHG log output below CRITICAL.
+
+#+begin_src jupyter-python
+VG_PATH = Path("/group/chem/acrg/verification_games_round_2")
+CATALOG_PATH = DEFAULT_CATALOG_PATH
+WORK_ROOT = VG_PATH / "forward_model_intermediates"
+BASELINE_OUTPUT_DIR = WORK_ROOT / "modelled_baseline"
+LOG_DIR = WORK_ROOT / "dask_logs"
+
+BC_RECORD_TYPE = "boundary_conditions"
+BC_SPECIES = ("co2", "o2")
+FOOTPRINT_STORE = "shared_store_zarr"
+FOOTPRINT_DOMAIN = "europe"
+FOOTPRINT_SPECIES_FOR_BASELINE = "co2"
+BASELINE_VARIABLE = "modelled_baseline"
+BASELINE_PRODUCT = "baseline_timeseries"
+BASELINE_KEYWORDS = ("modelled_baseline", "baseline_timeseries", "forward_model_intermediate")
+BASELINE_COMPRESSOR = Blosc(cname="lz4", clevel=5, shuffle=Blosc.SHUFFLE)
+
+games_cat = open_games_catalog(CATALOG_PATH)
+print(games_cat.describe())
+#+end_src
+
+#+RESULTS:
+: {'catalog_name': 'games-catalog', 'root_path': '/group/chem/acrg/verification_games_round_2/games_catalog', 'backend': 'tinydb', 'database_path': '/group/chem/acrg/verification_games_round_2/games_catalog/db.json', 'files_root': '/group/chem/acrg/verification_games_round_2/games_catalog/data', 'default_operation': 'copy', 'directory_template': '{year_added}/{original_stem}', 'filename_template': '{title_slug|original_stem}{original_suffix}', 'field_resolution_order': ['top_level', 'user_metadata', 'derived_metadata'], 'record_count': 125, 'has_metadata_fields': True, 'record_schemas': ['3d_conc_field', 'boundary_conditions', 'default', 'derived_flux', 'raw_flux', 'verification_games_flux', 'verification_games_obs']}
+
+** Cluster
+:PROPERTIES:
+:CUSTOM_ID: cluster
+:END:
+Start the cluster before smoke or production writes. The inspection cells
+below should run without a cluster because they only build small summaries
+and lazy xarray objects.
+
+#+begin_src jupyter-python
+!cp /group/chem/acrg/verification_games_round_2/verification-games-fluxes/slurm.toml /user/home/bm13805/slurm.toml
+#+end_src
+
+#+RESULTS:
+
+#+begin_src jupyter-python
+START_CLUSTER = True
+
+if START_CLUSTER:
+    account = load_slurm_account("slurm.toml")
+    cluster, client = make_slurm_cluster(
+        log_path=LOG_DIR,
+        account=account,
+        walltime="12:00:00",
+        n_workers=16,
+        cores_per_worker=2,
+        memory_per_worker_gb=48,
+    )
+    print(client)
+#+end_src
+
+#+RESULTS:
+: <Client: 'tcp://172.25.9.102:44681' processes=0 threads=0, memory=0 B>
+: /group/chem/acrg/verification_games_round_2/verification-games/.venv/lib/python3.12/site-packages/distributed/node.py:188: UserWarning: Port 8787 is already in use.
+: Perhaps you already have a cluster running?
+: Hosting the HTTP server on port 46097 instead
+:   warnings.warn(
+
+#+begin_src jupyter-python
+if "client" in globals():
+    wait_for_workers(client, 8)
+#+end_src
+
+#+RESULTS:
+: 6cd2e2ae-d7e6-4d8f-9e3f-00fa76143cc1
+
+*** Dashboard
+
+#+name: dashboard_port
+#+begin_src jupyter-python
+from urllib.parse import urlparse
+
+parsed = urlparse(str(client.dashboard_link))
+parsed.port
+#+end_src
+
+#+RESULTS: dashboard_port
+: 46097
+
+#+name: local_dashboard_port
+#+begin_src emacs-lisp
+8765
+#+end_src
+
+#+RESULTS: local_dashboard_port
+: 8765
+
+#+name: dashboard_title
+#+begin_src emacs-lisp :results value
+(let ((session
+       (save-excursion
+         (goto-char (point-min))
+         (when (re-search-forward "^#\+PROPERTY:.*:session[ \t]+\([^ \t\n]+\)" nil t)
+           (match-string 1)))))
+  (if session
+      (concat "Dask: " (car (last (split-string session ":"))))
+    "Dask dashboard"))
+    #+end_src
+
+    #+RESULTS: dashboard_title
+    : Dask dashboard
+
+#+begin_src bash :var remote_port=dashboard_port local_port=local_dashboard_port :results silent
+pfwd -r "$remote_port" -l "$local_port" -y
+#+end_src
+
+#+begin_src bash :var local_port=local_dashboard_port title=dashboard_title :results silent
+url="http://localhost:${local_port}/status"
+
+wrapper="/tmp/dask-dashboard-${local_port}.html"
+
+cat > "$wrapper" <<EOF
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${title}</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    iframe {
+      border: 0;
+      width: 100vw;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <iframe src="${url}"></iframe>
+</body>
+</html>
+EOF
+
+file_url="$(python3 -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve().as_uri())' "$wrapper")"
+
+osascript <<APPLESCRIPT
+tell application "Safari"
+    activate
+    make new document with properties {URL:"$file_url"}
+end tell
+APPLESCRIPT
+#+end_src
+
+** Boundary-condition records
+:PROPERTIES:
+:CUSTOM_ID: boundary-condition-records
+:END:
+
+#+begin_src jupyter-python
+def record_path(record) -> str:
+    stored = getattr(record, "stored_abspath", None)
+    if stored:
+        return str(stored)
+    return str(record.locator.value)
+
+
+def find_boundary_condition_records(catalog, species=BC_SPECIES) -> dict[str, object]:
+    species_regex = "^(" + "|".join(species) + ")$"
+    records = catalog.search(
+        where={"record_type": BC_RECORD_TYPE},
+        regex={"species": species_regex},
+        as_record_set=True,
+    )
+    out = {}
+    for record in records:
+        sp = str(record.user_metadata.get("species", "")).lower()
+        if sp:
+            out[sp] = record
+    missing = sorted(set(species) - set(out))
+    if missing:
+        raise ValueError(f"Missing boundary-condition records for species: {missing}")
+    return out
+
+
+def boundary_record_table(records_by_species: dict[str, object]) -> pd.DataFrame:
+    rows = []
+    for sp, record in records_by_species.items():
+        user = getattr(record, "user_metadata", {}) or {}
+        derived = getattr(record, "derived_metadata", {}) or {}
+        rows.append(
+            {
+                "id": str(record.id),
+                "species": sp,
+                "product": user.get("product"),
+                "version": user.get("version"),
+                "year": user.get("year"),
+                "path": record_path(record),
+                "units": derived.get("units"),
+                "dims": derived.get("sizes"),
+                "variables": derived.get("output_variables"),
+            }
+        )
+    return pd.DataFrame(rows).sort_values("species")
+
+
+bc_records = find_boundary_condition_records(games_cat)
+bc_record_df = boundary_record_table(bc_records)
+print(bc_record_df)
+#+end_src
+
+#+RESULTS:
+: 690e6b86-30c1-4477-99e1-d5ec6519bbe1
+
+#+begin_src jupyter-python
+def open_bc_record(record, *, chunks: dict[str, int] | None = None) -> xr.Dataset:
+    chunks = chunks or {"time": 8}
+    path = record_path(record)
+    ds = xr.open_dataset(path, chunks=chunks)
+    ds.attrs = append_history(
+        dict(ds.attrs),
+        f"Opened boundary-condition record {record.id} from games_catalog for baseline processing.",
+    )
+    return ds
+
+
+co2_bc = open_bc_record(bc_records["co2"])
+print(co2_bc)
+print(
+    pd.DataFrame(
+        [
+            {
+                "variable": name,
+                "dims": data.dims,
+                "shape": data.shape,
+                "units": data.attrs.get("units"),
+                "chunks": getattr(data.data, "chunks", None),
+            }
+            for name, data in co2_bc.data_vars.items()
+            if name.startswith("vmr_")
+        ]
+    )
+)
+#+end_src
+
+#+RESULTS:
+: 7c2bc003-6547-41a6-a4b0-b7061856a017
+
+** Footprint particle locations
+:PROPERTIES:
+:CUSTOM_ID: footprint-particle-locations
+:END:
+The flux pipeline helper strips footprints down to =fp_time_resolved= and
+=fp_residual=. Baseline processing needs the raw particle-location curtain
+variables, so this notebook retrieves footprints directly from OpenGHG.
+
+#+begin_src jupyter-python
+PARTICLE_LOCATION_VARS = (
+    "particle_locations_n",
+    "particle_locations_e",
+    "particle_locations_s",
+    "particle_locations_w",
+)
+
+
+def suppress_openghg_logging() -> None:
+    for logger_name in OPENGHG_LOGGERS:
+        logger = logging.getLogger(logger_name)
+        logger.setLevel(logging.CRITICAL)
+        logger.propagate = False
+        for handler in logger.handlers:
+            handler.setLevel(logging.CRITICAL)
+
+
+def footprint_dataset_from_openghg(data) -> xr.Dataset:
+    ds = data.data if hasattr(data, "data") else data
+    if not isinstance(ds, xr.Dataset):
+        raise TypeError("Expected an xarray Dataset or object with a Dataset .data attribute")
+    return ds
+
+
+def get_month_footprint_with_particles(
+    *,
+    site: str,
+    start_date: str | pd.Timestamp,
+    end_date: str | pd.Timestamp,
+    store: str = FOOTPRINT_STORE,
+    domain: str = FOOTPRINT_DOMAIN,
+    species: str = FOOTPRINT_SPECIES_FOR_BASELINE,
+    inlet: str | None = None,
+) -> xr.Dataset:
+    from openghg.retrieve import get_footprint  # noqa: PLC0415
+
+    suppress_openghg_logging()
+    kwargs = {
+        "site": site.lower(),
+        "domain": domain,
+        "store": store,
+        "species": species,
+        "start_date": str(pd.Timestamp(start_date).date()),
+        "end_date": str(pd.Timestamp(end_date).date()),
+    }
+    if inlet is not None:
+        kwargs["inlet"] = inlet
+
+    ds = footprint_dataset_from_openghg(get_footprint(**kwargs))
+    missing = [name for name in PARTICLE_LOCATION_VARS if name not in ds.data_vars]
+    if missing:
+        raise ValueError(f"Footprint for {site} is missing particle-location variables: {missing}")
+    return ds
+#+end_src
+
+#+RESULTS:
+: 152b11bc-ed66-45c0-b7b7-2b774b6cfa0c
+
+#+begin_src jupyter-python
+INSPECT_SITE = "BSD"
+INSPECT_START = "2021-01-01"
+INSPECT_END = "2021-02-01"
+
+inspect_fp = get_month_footprint_with_particles(
+    site=INSPECT_SITE,
+    start_date=INSPECT_START,
+    end_date=INSPECT_END,
+)
+
+particle_table = pd.DataFrame(
+    [
+        {
+            "variable": name,
+            "dims": inspect_fp[name].dims,
+            "shape": inspect_fp[name].shape,
+            "units": inspect_fp[name].attrs.get("units"),
+            "chunks": getattr(inspect_fp[name].data, "chunks", None),
+        }
+        for name in PARTICLE_LOCATION_VARS
+    ]
+)
+particle_table
+#+end_src
+
+#+RESULTS:
+: c14d85b0-a327-4e3d-a0ef-3a4532c1db68
+
+#+begin_src jupyter-python
+print(inspect_fp[[*PARTICLE_LOCATION_VARS]])
+#+end_src
+
+#+RESULTS:
+: 26898a37-4542-4080-b997-616b70521e71
+
+** Inert baseline calculation
+:PROPERTIES:
+:CUSTOM_ID: inert-baseline-calculation
+:END:
+OpenGHG's =baseline_sensitivities= supports short-lifetime species via
+particle age and loss terms. CO2 and O2 are inert on these transport
+timescales, so this notebook uses the equivalent inert calculation:
+
+- reindex boundary-condition time to footprint time with forward fill;
+- align =level= to footprint =height= by index if needed;
+- multiply NESW particle-location fractions by NESW boundary VMR fields;
+- sum the four curtain contributions over curtain dimensions and NESW.
+
+TODO before full production: confirm in the inspection output that the
+boundary-condition =level= coordinate is the same vertical grid as the
+footprint =height= coordinate. The current code renames =level= to
+=height= and assigns the footprint height coordinate when the lengths
+match.
+
+#+begin_src jupyter-python
+CURTAIN_TO_DIMS = {
+    "n": ("height", "lon"),
+    "e": ("height", "lat"),
+    "s": ("height", "lon"),
+    "w": ("height", "lat"),
+}
+
+
+def _max_abs_coord_diff(left: xr.DataArray, right: xr.DataArray) -> float:
+    return float(np.nanmax(np.abs(np.asarray(left.values) - np.asarray(right.values))))
+
+
+def normalise_bc_for_footprint(
+    bc: xr.Dataset,
+    fp: xr.Dataset,
+    *,
+    spatial_tolerance: float = 1e-5,
+) -> xr.Dataset:
+    out = bc
+
+    if "level" in out.dims and "height" in fp.dims and "height" not in out.dims:
+        out = out.rename({"level": "height"})
+        if out.sizes["height"] == fp.sizes["height"]:
+            out = out.assign_coords(height=fp["height"])
+            out.attrs["height_alignment_note"] = (
+                "Renamed boundary-condition level to footprint height by index. "
+                "Confirm this is physically correct before full production."
+            )
+        else:
+            raise ValueError(
+                "Boundary-condition level dimension cannot be aligned to footprint height: "
+                f"{out.sizes['height']} != {fp.sizes['height']}"
+            )
+
+    for dim in ("lat", "lon"):
+        if dim not in out.dims or dim not in fp.dims:
+            continue
+        if out.sizes[dim] != fp.sizes[dim]:
+            raise ValueError(f"Boundary-condition {dim} size differs from footprint {dim} size.")
+        if dim in out.coords:
+            diff = _max_abs_coord_diff(out[dim], fp[dim])
+            if diff > spatial_tolerance:
+                raise ValueError(
+                    f"Boundary-condition {dim} differs from footprint {dim} by {diff}, "
+                    f"above tolerance {spatial_tolerance}."
+                )
+        out = out.assign_coords({dim: fp[dim]})
+
+    if "time" in out.dims:
+        out = out.reindex(time=fp["time"], method="ffill")
+
+    time_chunks = getattr(fp["particle_locations_n"], "chunksizes", {}).get("time")
+    if time_chunks:
+        out = out.chunk({"time": int(time_chunks[0])})
+
+    return out
+
+
+def inert_baseline_sensitivities(bc: xr.Dataset, fp: xr.Dataset) -> xr.Dataset:
+    bc_aligned = normalise_bc_for_footprint(bc, fp)
+    missing = [f"vmr_{direction}" for direction in "nesw" if f"vmr_{direction}" not in bc_aligned]
+    if missing:
+        raise ValueError(f"Boundary-condition dataset is missing variables: {missing}")
+
+    data_vars = {}
+    for direction in "nesw":
+        fp_var = f"particle_locations_{direction}"
+        bc_var = f"vmr_{direction}"
+        out_var = f"bc_{direction}"
+        data = fp[fp_var] * bc_aligned[bc_var]
+        data = data.astype("float32")
+        data.attrs["units"] = bc_aligned[bc_var].attrs.get("units", bc_aligned.attrs.get("units", ""))
+        data.attrs["long_name"] = f"{direction.upper()} boundary-condition baseline contribution"
+        data_vars[out_var] = data
+
+    result = xr.Dataset(data_vars)
+    result.attrs = append_history(
+        dict(bc_aligned.attrs),
+        "Computed inert boundary-condition sensitivities from particle locations and VMR curtains.",
+    )
+    return result
+
+
+def inert_modelled_baseline(bc: xr.Dataset, fp: xr.Dataset) -> xr.DataArray:
+    sensitivities = inert_baseline_sensitivities(bc, fp)
+    components = []
+    curtains = []
+    for direction, dims in CURTAIN_TO_DIMS.items():
+        var = f"bc_{direction}"
+        sum_dims = [dim for dim in dims if dim in sensitivities[var].dims]
+        components.append(sensitivities[var].sum(sum_dims))
+        curtains.append(direction)
+
+    baseline = xr.concat(components, dim=xr.IndexVariable("bc_curtain", curtains)).sum("bc_curtain")
+    baseline = baseline.rename(BASELINE_VARIABLE).astype("float32")
+    units = next(
+        (
+            sensitivities[f"bc_{direction}"].attrs.get("units")
+            for direction in "nesw"
+            if sensitivities[f"bc_{direction}"].attrs.get("units")
+        ),
+        "",
+    )
+    baseline.attrs["units"] = units
+    baseline.attrs["long_name"] = "Modelled baseline mole fraction from boundary-condition curtains"
+    baseline.attrs["comment"] = "Computed for inert species; no lifetime or loss term applied."
+    return baseline
+#+end_src
+
+#+RESULTS:
+: 783e751b-ccf3-4a9b-a712-b067301d8cf7
+
+#+begin_src jupyter-python
+def source_metadata(
+    *,
+    species: str,
+    scenarios=DEFAULT_SCENARIOS,
+    sectors=DEFAULT_SECTORS,
+) -> pd.DataFrame:
+    rows = []
+    for scenario in scenarios:
+        for sector in sectors:
+            rows.append(
+                {
+                    "source": source_label(species, scenario, sector),
+                    "species": species.lower(),
+                    "games_scenario": scenario.upper(),
+                    "sector": sector,
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def add_source_axis(
+    baseline: xr.DataArray,
+    *,
+    species: str,
+    scenarios=DEFAULT_SCENARIOS,
+    sectors=DEFAULT_SECTORS,
+) -> xr.DataArray:
+    meta = source_metadata(species=species, scenarios=scenarios, sectors=sectors)
+    out = baseline.expand_dims(source=meta["source"].to_numpy()).transpose("time", "source")
+    out = out.assign_coords(
+        species=("source", meta["species"].to_numpy()),
+        games_scenario=("source", meta["games_scenario"].to_numpy()),
+        sector=("source", meta["sector"].to_numpy()),
+    )
+    return out
+
+
+def build_baseline_dataset(
+    *,
+    fp: xr.Dataset,
+    bc_records_by_species: dict[str, object],
+    scenarios=DEFAULT_SCENARIOS,
+    sectors=DEFAULT_SECTORS,
+) -> xr.Dataset:
+    arrays = []
+    input_record_ids = []
+    input_paths = []
+    units_by_species = {}
+
+    for species in BC_SPECIES:
+        record = bc_records_by_species[species]
+        bc = open_bc_record(record)
+        baseline = inert_modelled_baseline(bc, fp)
+        units_by_species[species] = baseline.attrs.get("units", "")
+        arrays.append(add_source_axis(baseline, species=species, scenarios=scenarios, sectors=sectors))
+        input_record_ids.append(str(record.id))
+        input_paths.append(record_path(record))
+
+    combined = xr.concat(arrays, dim="source").transpose("time", "source")
+    combined.name = BASELINE_VARIABLE
+    combined.attrs["units"] = next(iter(set(units_by_species.values()))) if len(set(units_by_species.values())) == 1 else ""
+    combined.attrs["source_units_by_species"] = json.dumps(units_by_species, sort_keys=True)
+    combined.attrs["long_name"] = "Modelled baseline mole fraction from boundary-condition curtains"
+
+    ds = xr.Dataset({BASELINE_VARIABLE: combined})
+    ds.attrs = append_history(
+        {
+            "title": "Verification-games modelled baseline intermediate",
+            "product": BASELINE_PRODUCT,
+            "keywords": ", ".join(BASELINE_KEYWORDS),
+            "footprint_store": FOOTPRINT_STORE,
+            "footprint_domain": FOOTPRINT_DOMAIN,
+            "footprint_species": FOOTPRINT_SPECIES_FOR_BASELINE,
+            "boundary_condition_record_ids": ",".join(input_record_ids),
+            "boundary_condition_paths": json.dumps(input_paths),
+            "scenario_sector_policy": (
+                "Boundary conditions are species-specific only; values are repeated across "
+                "scenario and sector source labels for later joining with flux outputs."
+            ),
+        },
+        "Computed inert modelled baseline from CORSO boundary conditions and NAME particle locations.",
+    )
+    return ds
+#+end_src
+
+#+RESULTS:
+: 9a84481f-ce64-438f-b38a-34f26d905d9b
+
+** Smoke test
+:PROPERTIES:
+:CUSTOM_ID: smoke-test
+:END:
+Run this before production. It computes BSD, January 2021, and inspects
+the BASE source labels.
+
+#+begin_src jupyter-python
+SMOKE_SITE = "BSD"
+SMOKE_START = "2021-01-01"
+SMOKE_END = "2021-02-01"
+
+smoke_fp = get_month_footprint_with_particles(
+    site=SMOKE_SITE,
+    start_date=SMOKE_START,
+    end_date=SMOKE_END,
+)
+smoke_ds = build_baseline_dataset(fp=smoke_fp, bc_records_by_species=bc_records)
+print(smoke_ds)
+#+end_src
+
+#+RESULTS:
+: c3610294-8f4e-47d7-8897-307f45bdfa5d
+
+#+begin_src jupyter-python
+base_sources = smoke_ds["source"].where(smoke_ds["games_scenario"] == "BASE", drop=True)
+smoke_base = smoke_ds[BASELINE_VARIABLE].sel(source=base_sources)
+
+print(smoke_base)
+smoke_base.isel(time=slice(0, 24)).compute()
+#+end_src
+
+#+RESULTS:
+: eb7c6e19-3989-4e36-86fa-2181372a5819
+
+#+begin_src jupyter-python
+smoke_base.mean("time").compute().to_dataframe(name=BASELINE_VARIABLE)
+#+end_src
+
+#+RESULTS:
+: e27d8dc3-6b37-4eba-b60f-b2a9c1953d9f
+
+** Output helpers
+:PROPERTIES:
+:CUSTOM_ID: output-helpers
+:END:
+
+#+begin_src jupyter-python
+@dataclass(frozen=True)
+class BaselineRun:
+    site: str
+    start_date: str
+    end_date: str
+    output_path: str
+    footprint_store: str
+    footprint_domain: str
+    footprint_species: str
+    boundary_condition_record_ids: list[str]
+    time_chunk: int
+    source_chunk: int
+    created_at: str
+    status: str
+    error_type: str | None = None
+    error_message: str | None = None
+    error_traceback: str | None = None
+
+
+def json_safe(value):
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, pd.Timestamp):
+        return value.isoformat()
+    if isinstance(value, np.integer):
+        return int(value)
+    if isinstance(value, np.floating):
+        return float(value)
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if isinstance(value, dict):
+        return {str(key): json_safe(val) for key, val in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [json_safe(item) for item in value]
+    return value
+
+
+def baseline_output_path(output_root: str | Path, *, site: str, start_date: str | pd.Timestamp) -> Path:
+    month = pd.Timestamp(start_date).strftime("%Y%m")
+    site_label = site.lower()
+    return Path(output_root) / site_label / f"{site_label}_{month}_modelled_baseline.zarr"
+
+
+def manifest_path_for_output(output_path: str | Path) -> Path:
+    return Path(output_path).with_suffix(".manifest.json")
+
+
+def write_manifest(run: BaselineRun) -> Path:
+    path = manifest_path_for_output(run.output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = json_safe(asdict(run))
+    payload["product"] = BASELINE_PRODUCT
+    payload["variable"] = BASELINE_VARIABLE
+    payload["keywords"] = list(BASELINE_KEYWORDS)
+    payload["scenario_sector_policy"] = (
+        "Boundary conditions are species-specific only; values are repeated across "
+        "scenario and sector source labels for later joining with flux outputs."
+    )
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True))
+    return path
+
+
+def zarr_encoding(ds: xr.Dataset, *, compressor=BASELINE_COMPRESSOR) -> dict[str, dict[str, object]]:
+    return {name: {"compressor": compressor} for name in ds.data_vars}
+
+
+def write_baseline_zarr(ds: xr.Dataset, output_path: str | Path) -> None:
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = output_path.parent / f".{output_path.name}.tmp-{uuid4().hex}"
+    if tmp_path.exists():
+        shutil.rmtree(tmp_path)
+    try:
+        ds.to_zarr(tmp_path, mode="w", consolidated=True, encoding=zarr_encoding(ds))
+        if output_path.exists():
+            shutil.rmtree(output_path)
+        shutil.move(str(tmp_path), str(output_path))
+    except Exception:
+        if tmp_path.exists():
+            shutil.rmtree(tmp_path)
+        raise
+#+end_src
+
+#+RESULTS:
+: 17919df2-71f8-41fd-a183-3675391eaf86
+
+** Production skeleton
+:PROPERTIES:
+:CUSTOM_ID: production-skeleton
+:END:
+
+#+begin_src jupyter-python
+def run_site_month_baseline(
+    *,
+    site: str,
+    start_date: str | pd.Timestamp,
+    end_date: str | pd.Timestamp,
+    output_dir: str | Path = BASELINE_OUTPUT_DIR,
+    bc_records_by_species: dict[str, object] = bc_records,
+    store: str = FOOTPRINT_STORE,
+    domain: str = FOOTPRINT_DOMAIN,
+    footprint_species: str = FOOTPRINT_SPECIES_FOR_BASELINE,
+    inlet: str | None = None,
+    time_chunk: int = 24,
+    source_chunk: int = 16,
+    skip_existing: bool = True,
+) -> BaselineRun:
+    output_path = baseline_output_path(output_dir, site=site, start_date=start_date)
+    start = pd.Timestamp(start_date).strftime("%Y-%m-%d")
+    end = pd.Timestamp(end_date).strftime("%Y-%m-%d")
+    bc_record_ids = [str(record.id) for record in bc_records_by_species.values()]
+
+    if skip_existing and output_path.exists():
+        run = BaselineRun(
+            site=site.upper(),
+            start_date=start,
+            end_date=end,
+            output_path=str(output_path),
+            footprint_store=store,
+            footprint_domain=domain,
+            footprint_species=footprint_species,
+            boundary_condition_record_ids=bc_record_ids,
+            time_chunk=time_chunk,
+            source_chunk=source_chunk,
+            created_at=datetime.now(UTC).isoformat(),
+            status="skipped_existing",
+        )
+        write_manifest(run)
+        return run
+
+    print(f"Processing baseline {site.upper()} {start} to {end}")
+    fp = get_month_footprint_with_particles(
+        site=site,
+        start_date=start,
+        end_date=end,
+        store=store,
+        domain=domain,
+        species=footprint_species,
+        inlet=inlet,
+    )
+    ds = build_baseline_dataset(fp=fp, bc_records_by_species=bc_records_by_species)
+    ds = ds.chunk({"time": time_chunk, "source": source_chunk})
+    ds.attrs = append_history(
+        dict(ds.attrs),
+        f"Prepared site/month modelled_baseline output for {site.upper()} {start} to {end}.",
+    )
+    write_baseline_zarr(ds, output_path)
+
+    run = BaselineRun(
+        site=site.upper(),
+        start_date=start,
+        end_date=end,
+        output_path=str(output_path),
+        footprint_store=store,
+        footprint_domain=domain,
+        footprint_species=footprint_species,
+        boundary_condition_record_ids=bc_record_ids,
+        time_chunk=time_chunk,
+        source_chunk=source_chunk,
+        created_at=datetime.now(UTC).isoformat(),
+        status="written",
+    )
+    write_manifest(run)
+    return run
+
+
+def run_site_month_baseline_safe(**kwargs) -> BaselineRun:
+    try:
+        return run_site_month_baseline(**kwargs)
+    except (KeyboardInterrupt, SystemExit):
+        raise
+    except Exception as exc:  # noqa: BLE001
+        site = str(kwargs["site"]).upper()
+        start = pd.Timestamp(kwargs["start_date"]).strftime("%Y-%m-%d")
+        end = pd.Timestamp(kwargs["end_date"]).strftime("%Y-%m-%d")
+        output_dir = Path(kwargs.get("output_dir", BASELINE_OUTPUT_DIR))
+        output_path = baseline_output_path(output_dir, site=site, start_date=start)
+        bc_records_by_species = kwargs.get("bc_records_by_species", bc_records)
+        bc_record_ids = [str(record.id) for record in bc_records_by_species.values()]
+        run = BaselineRun(
+            site=site,
+            start_date=start,
+            end_date=end,
+            output_path=str(output_path),
+            footprint_store=kwargs.get("store", FOOTPRINT_STORE),
+            footprint_domain=kwargs.get("domain", FOOTPRINT_DOMAIN),
+            footprint_species=kwargs.get("footprint_species", FOOTPRINT_SPECIES_FOR_BASELINE),
+            boundary_condition_record_ids=bc_record_ids,
+            time_chunk=int(kwargs.get("time_chunk", 24)),
+            source_chunk=int(kwargs.get("source_chunk", 16)),
+            created_at=datetime.now(UTC).isoformat(),
+            status="failed",
+            error_type=type(exc).__name__,
+            error_message=str(exc),
+            error_traceback=traceback.format_exc(),
+        )
+        write_manifest(run)
+        print(f"FAILED baseline {site} {start} to {end}: {type(exc).__name__}: {exc}")
+        return run
+#+end_src
+
+#+RESULTS:
+: 5e3bb144-645b-41bc-a56f-7df3b662db8f
+
+#+begin_src jupyter-python
+RUN_SMOKE_WRITE = False
+
+if RUN_SMOKE_WRITE:
+    smoke_run = run_site_month_baseline_safe(
+        site="BSD",
+        start_date="2021-01-01",
+        end_date="2021-02-01",
+        output_dir=BASELINE_OUTPUT_DIR,
+        time_chunk=24,
+        source_chunk=16,
+        skip_existing=False,
+    )
+    print(smoke_run)
+#+end_src
+
+#+RESULTS:
+
+#+begin_src jupyter-python
+RUN_BASELINE_PRODUCTION = False
+PRODUCTION_SITES = AVAILABLE_SHARED_STORE_SITES
+PRODUCTION_TIME_CHUNK = 24
+PRODUCTION_SOURCE_CHUNK = 16
+
+if RUN_BASELINE_PRODUCTION:
+    completed = []
+    for site in PRODUCTION_SITES:
+        for start_date, end_date in month_windows(start="2021-01-01", end="2022-01-01"):
+            run = run_site_month_baseline_safe(
+                site=site,
+                start_date=start_date,
+                end_date=end_date,
+                output_dir=BASELINE_OUTPUT_DIR,
+                time_chunk=PRODUCTION_TIME_CHUNK,
+                source_chunk=PRODUCTION_SOURCE_CHUNK,
+                skip_existing=True,
+            )
+            completed.append(run)
+
+    baseline_runs_df = pd.DataFrame([asdict(run) for run in completed])
+    print(baseline_runs_df["status"].value_counts(dropna=False))
+    failed = baseline_runs_df[baseline_runs_df["status"] == "failed"]
+    if not failed.empty:
+        print(failed[["site", "start_date", "end_date", "error_type", "error_message", "output_path"]])
+#+end_src
+
+#+RESULTS:
+
+** Open written intermediates
+:PROPERTIES:
+:CUSTOM_ID: open-written-intermediates
+:END:
+
+#+begin_src jupyter-python
+CHECK_SITE = "BSD"
+CHECK_MONTH = "202101"
+check_path = BASELINE_OUTPUT_DIR / CHECK_SITE.lower() / f"{CHECK_SITE.lower()}_{CHECK_MONTH}_modelled_baseline.zarr"
+
+if check_path.exists():
+    check_ds = xr.open_zarr(check_path)
+    print(check_ds)
+    display(check_ds[BASELINE_VARIABLE].sel(source=check_ds["source"].where(check_ds["games_scenario"] == "BASE", drop=True)))
+else:
+    print(f"No baseline output yet: {check_path}")
+#+end_src
+
+#+RESULTS:
