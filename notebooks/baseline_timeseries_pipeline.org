@@ -155,7 +155,6 @@ if "client" in globals():
 #+end_src
 
 #+RESULTS:
-: 6cd2e2ae-d7e6-4d8f-9e3f-00fa76143cc1
 
 *** Dashboard
 
@@ -297,7 +296,23 @@ print(bc_record_df)
 #+end_src
 
 #+RESULTS:
-: 690e6b86-30c1-4477-99e1-d5ec6519bbe1
+#+begin_example
+   id species product version           year  \
+0  72     co2   CORSO   v2025  202012-202112
+1  73      o2   CORSO   v2025  202012-202112
+
+                                                path           units  \
+0  /group/chem/acrg/verification_games_round_2/ga...  micromol mol-1
+1  /group/chem/acrg/verification_games_round_2/ga...  micromol mol-1
+
+                                                dims  \
+0  {'time': 3167, 'lon': 391, 'level': 20, 'lat':...
+1  {'time': 3167, 'lon': 391, 'level': 20, 'lat':...
+
+                      variables
+0  [vmr_n, vmr_e, vmr_s, vmr_w]
+1  [vmr_n, vmr_e, vmr_s, vmr_w]
+#+end_example
 
 #+begin_src jupyter-python
 def open_bc_record(record, *, chunks: dict[str, int] | None = None) -> xr.Dataset:
@@ -331,7 +346,47 @@ print(
 #+end_src
 
 #+RESULTS:
-: 7c2bc003-6547-41a6-a4b0-b7061856a017
+#+begin_example
+<xarray.Dataset> Size: 347MB
+Dimensions:  (time: 3167, lon: 391, level: 20, lat: 293)
+Coordinates:
+  ,* time     (time) datetime64[ns] 25kB 2020-12-01T01:30:00 ... 2021-12-31T19...
+  ,* lon      (lon) float32 2kB -97.9 -97.55 -97.2 -96.84 ... 38.68 39.03 39.38
+  ,* level    (level) float32 80B 500.0 1.5e+03 2.5e+03 ... 1.85e+04 1.95e+04
+  ,* lat      (lat) float32 1kB 10.73 10.96 11.2 11.43 ... 78.59 78.82 79.06
+Data variables:
+    vmr_n    (time, lon, level) float32 99MB dask.array<chunksize=(8, 391, 20), meta=np.ndarray>
+    vmr_e    (time, lat, level) float32 74MB dask.array<chunksize=(8, 293, 20), meta=np.ndarray>
+    vmr_s    (time, lon, level) float32 99MB dask.array<chunksize=(8, 391, 20), meta=np.ndarray>
+    vmr_w    (time, lat, level) float32 74MB dask.array<chunksize=(8, 293, 20), meta=np.ndarray>
+Attributes: (12/15)
+    title:             CORSO v2025 NAME EUROPE CO2 boundary conditions
+    product:           CORSO
+    version:           v2025
+    species:           co2
+    domain:            EUROPE
+    bc_input:          CORSO_v2025
+    ...                ...
+    author:            Joram Hooghiem
+    email:             joram.hooghiem@wur.nl
+    institution:       Wageningen University & Research
+    input_record_ids:  59,60,61,62,63,64,65,66,67,68,69,70,71
+    source_paths:      /group/chem/acrg/verification_games_round_2/joram_bc_r...
+    history:           Created 2026-03-10 16:54:42 UTC by ./tm5mp.x.\n2026-04...
+  variable                dims            shape           units  \
+0    vmr_n  (time, lon, level)  (3167, 391, 20)  micromol mol-1
+1    vmr_e  (time, lat, level)  (3167, 293, 20)  micromol mol-1
+2    vmr_s  (time, lon, level)  (3167, 391, 20)  micromol mol-1
+3    vmr_w  (time, lat, level)  (3167, 293, 20)  micromol mol-1
+
+                                              chunks
+0  ((8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,...
+1  ((8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,...
+2  ((8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,...
+3  ((8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,...
+/tmp/ipykernel_1242774/1347347374.py:4: UserWarning: The specified chunks separate the stored chunks along dimension "time" starting at index 8. This could degrade performance. Instead, consider rechunking after loading.
+  ds = xr.open_dataset(path, chunks=chunks)
+#+end_example
 
 ** Footprint particle locations
 :PROPERTIES:
@@ -398,7 +453,6 @@ def get_month_footprint_with_particles(
 #+end_src
 
 #+RESULTS:
-: 152b11bc-ed66-45c0-b7b7-2b774b6cfa0c
 
 #+begin_src jupyter-python
 INSPECT_SITE = "BSD"
@@ -423,18 +477,57 @@ particle_table = pd.DataFrame(
         for name in PARTICLE_LOCATION_VARS
     ]
 )
-particle_table
+print(particle_table)
 #+end_src
 
 #+RESULTS:
-: c14d85b0-a327-4e3d-a0ef-3a4532c1db68
+#+begin_example
+               variable                 dims           shape units  \
+0  particle_locations_n  (time, height, lon)  (744, 20, 391)     1
+1  particle_locations_e  (time, height, lat)  (744, 20, 293)     1
+2  particle_locations_s  (time, height, lon)  (744, 20, 391)     1
+3  particle_locations_w  (time, height, lat)  (744, 20, 293)     1
+
+                                              chunks
+0  ((24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, ...
+1  ((24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, ...
+2  ((24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, ...
+3  ((24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, ...
+#+end_example
 
 #+begin_src jupyter-python
 print(inspect_fp[[*PARTICLE_LOCATION_VARS]])
 #+end_src
 
 #+RESULTS:
-: 26898a37-4542-4080-b997-616b70521e71
+#+begin_example
+<xarray.Dataset> Size: 81MB
+Dimensions:               (time: 744, height: 20, lon: 391, lat: 293)
+Coordinates:
+  ,* time                  (time) datetime64[ns] 6kB 2021-01-01 ... 2021-01-31...
+  ,* height                (height) float32 80B 500.0 1.5e+03 ... 1.95e+04
+  ,* lon                   (lon) float32 2kB -97.9 -97.55 -97.2 ... 39.03 39.38
+  ,* lat                   (lat) float32 1kB 10.73 10.96 11.2 ... 78.82 79.06
+Data variables:
+    particle_locations_n  (time, height, lon) float32 23MB dask.array<chunksize=(24, 20, 391), meta=np.ndarray>
+    particle_locations_e  (time, height, lat) float32 17MB dask.array<chunksize=(24, 20, 293), meta=np.ndarray>
+    particle_locations_s  (time, height, lon) float32 23MB dask.array<chunksize=(24, 20, 391), meta=np.ndarray>
+    particle_locations_w  (time, height, lat) float32 17MB dask.array<chunksize=(24, 20, 293), meta=np.ndarray>
+Attributes: (12/22)
+    author:                   OpenGHG Cloud
+    data_type:                footprints
+    domain:                   europe
+    end_date:                 2021-08-31 23:59:59+00:00
+    height:                   248m
+    heights:                  [500.0, 1500.0, 2500.0, 3500.0, 4500.0, 5500.0,...
+    ...                       ...
+    site:                     bsd
+    species:                  co2
+    start_date:               2021-08-01 00:00:00+00:00
+    time_period:              1 hour
+    time_resolved:            True
+    variables:                ['fp', 'fp_HiTRes', 'air_temperature', 'air_pre...
+#+end_example
 
 ** Inert baseline calculation
 :PROPERTIES:
@@ -566,7 +659,6 @@ def inert_modelled_baseline(bc: xr.Dataset, fp: xr.Dataset) -> xr.DataArray:
 #+end_src
 
 #+RESULTS:
-: 783e751b-ccf3-4a9b-a712-b067301d8cf7
 
 #+begin_src jupyter-python
 def source_metadata(
@@ -655,7 +747,6 @@ def build_baseline_dataset(
 #+end_src
 
 #+RESULTS:
-: 9a84481f-ce64-438f-b38a-34f26d905d9b
 
 ** Smoke test
 :PROPERTIES:
@@ -679,7 +770,56 @@ print(smoke_ds)
 #+end_src
 
 #+RESULTS:
-: c3610294-8f4e-47d7-8897-307f45bdfa5d
+:RESULTS:
+# [goto error]
+#+begin_example
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+Cell In[16], line 10
+      6     site=SMOKE_SITE,
+      7     start_date=SMOKE_START,
+      8     end_date=SMOKE_END,
+      9 )
+---> 10 smoke_ds = build_baseline_dataset(fp=smoke_fp, bc_records_by_species=bc_records)
+     11 print(smoke_ds)
+
+Cell In[15], line 53, in build_baseline_dataset(fp, bc_records_by_species, scenarios, sectors)
+     49
+     50     for species in BC_SPECIES:
+     51         record = bc_records_by_species[species]
+     52         bc = open_bc_record(record)
+---> 53         baseline = inert_modelled_baseline(bc, fp)
+     54         units_by_species[species] = baseline.attrs.get("units", "")
+     55         arrays.append(add_source_axis(baseline, species=species, scenarios=scenarios, sectors=sectors))
+     56         input_record_ids.append(str(record.id))
+
+Cell In[14], line 85, in inert_modelled_baseline(bc, fp)
+     84 def inert_modelled_baseline(bc: xr.Dataset, fp: xr.Dataset) -> xr.DataArray:
+---> 85     sensitivities = inert_baseline_sensitivities(bc, fp)
+     86     components = []
+     87     curtains = []
+     88     for direction, dims in CURTAIN_TO_DIMS.items():
+
+Cell In[14], line 60, in inert_baseline_sensitivities(bc, fp)
+     59 def inert_baseline_sensitivities(bc: xr.Dataset, fp: xr.Dataset) -> xr.Dataset:
+---> 60     bc_aligned = normalise_bc_for_footprint(bc, fp)
+     61     missing = [f"vmr_{direction}" for direction in "nesw" if f"vmr_{direction}" not in bc_aligned]
+     62     if missing:
+     63         raise ValueError(f"Boundary-condition dataset is missing variables: {missing}")
+
+Cell In[14], line 43, in normalise_bc_for_footprint(bc, fp, spatial_tolerance)
+     39             raise ValueError(f"Boundary-condition {dim} size differs from footprint {dim} size.")
+     40         if dim in out.coords:
+     41             diff = _max_abs_coord_diff(out[dim], fp[dim])
+     42             if diff > spatial_tolerance:
+---> 43                 raise ValueError(
+     44                     f"Boundary-condition {dim} differs from footprint {dim} by {diff}, "
+     45                     f"above tolerance {spatial_tolerance}."
+     46                 )
+
+ValueError: Boundary-condition lat differs from footprint lat by 6.866455078125e-05, above tolerance 1e-05.
+#+end_example
+:END:
 
 #+begin_src jupyter-python
 base_sources = smoke_ds["source"].where(smoke_ds["games_scenario"] == "BASE", drop=True)
@@ -690,14 +830,33 @@ smoke_base.isel(time=slice(0, 24)).compute()
 #+end_src
 
 #+RESULTS:
-: eb7c6e19-3989-4e36-86fa-2181372a5819
+:RESULTS:
+# [goto error]
+: ---------------------------------------------------------------------------
+: NameError                                 Traceback (most recent call last)
+: Cell In[17], line 1
+: ----> 1 base_sources = smoke_ds["source"].where(smoke_ds["games_scenario"] == "BASE", drop=True)
+:       2 smoke_base = smoke_ds[BASELINE_VARIABLE].sel(source=base_sources)
+:       3
+:       4 print(smoke_base)
+:
+: NameError: name 'smoke_ds' is not defined
+:END:
 
 #+begin_src jupyter-python
 smoke_base.mean("time").compute().to_dataframe(name=BASELINE_VARIABLE)
 #+end_src
 
 #+RESULTS:
-: e27d8dc3-6b37-4eba-b60f-b2a9c1953d9f
+:RESULTS:
+# [goto error]
+: ---------------------------------------------------------------------------
+: NameError                                 Traceback (most recent call last)
+: Cell In[18], line 1
+: ----> 1 smoke_base.mean("time").compute().to_dataframe(name=BASELINE_VARIABLE)
+:
+: NameError: name 'smoke_base' is not defined
+:END:
 
 ** Output helpers
 :PROPERTIES:
@@ -789,7 +948,6 @@ def write_baseline_zarr(ds: xr.Dataset, output_path: str | Path) -> None:
 #+end_src
 
 #+RESULTS:
-: 17919df2-71f8-41fd-a183-3675391eaf86
 
 ** Production skeleton
 :PROPERTIES:
@@ -907,7 +1065,6 @@ def run_site_month_baseline_safe(**kwargs) -> BaselineRun:
 #+end_src
 
 #+RESULTS:
-: 5e3bb144-645b-41bc-a56f-7df3b662db8f
 
 #+begin_src jupyter-python
 RUN_SMOKE_WRITE = False
