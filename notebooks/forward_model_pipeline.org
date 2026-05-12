@@ -115,25 +115,29 @@ if START_CLUSTER:
     cluster, client = make_slurm_cluster(
         log_path=LOG_DIR,
         account=account,
-        walltime="20:00:00",
+        walltime="12:00:00",
         n_workers=16,
-        cores_per_worker=1,
-        memory_per_worker_gb=32,
+        cores_per_worker=2,
+        memory_per_worker_gb=48,
     )
     print(client)
 #+end_src
 
 #+RESULTS:
-: <Client: 'tcp://172.25.9.102:44693' processes=0 threads=0, memory=0 B>
+: <Client: 'tcp://172.25.9.102:34875' processes=0 threads=0, memory=0 B>
+: /group/chem/acrg/verification_games_round_2/verification-games/.venv/lib/python3.12/site-packages/distributed/node.py:188: UserWarning: Port 8787 is already in use.
+: Perhaps you already have a cluster running?
+: Hosting the HTTP server on port 42981 instead
+:   warnings.warn(
 
 #+begin_src jupyter-python
-wait_for_workers(client, 12)
+wait_for_workers(client, 8)
 warm_status = warm_forward_model_numba(client)
 print("Numba warm-up:", warm_status)
 #+end_src
 
 #+RESULTS:
-: Numba warm-up: {'tcp://10.133.1.103:42689': 'ok', 'tcp://10.133.1.121:38301': 'ok', 'tcp://10.133.1.121:38599': 'ok', 'tcp://10.133.1.123:37881': 'ok', 'tcp://10.133.1.127:39097': 'ok', 'tcp://10.133.1.60:36091': 'ok', 'tcp://10.133.1.65:34133': 'ok', 'tcp://10.133.1.72:33367': 'ok', 'tcp://10.133.1.72:36521': 'ok', 'tcp://10.133.1.72:42233': 'ok', 'tcp://10.133.1.72:45629': 'ok', 'tcp://10.133.1.85:36979': 'ok', 'tcp://10.133.1.88:36291': 'ok', 'tcp://10.133.1.93:38143': 'ok', 'tcp://10.133.1.98:40467': 'ok'}
+: Numba warm-up: {'tcp://10.133.1.121:45455': 'ok', 'tcp://10.133.1.60:44601': 'ok', 'tcp://10.133.1.65:35709': 'ok', 'tcp://10.133.1.65:41241': 'ok', 'tcp://10.133.1.72:34597': 'ok', 'tcp://10.133.1.72:36731': 'ok', 'tcp://10.133.1.72:41689': 'ok', 'tcp://10.133.1.91:40457': 'ok', 'tcp://10.133.1.91:43885': 'ok'}
 
 #+begin_src jupyter-python
 cluster.close()
@@ -153,7 +157,7 @@ parsed.port
 #+end_src
 
 #+RESULTS: dashboard_port
-: 33147
+: 42981
 
 #+name: local_dashboard_port
 #+begin_src emacs-lisp
@@ -388,7 +392,7 @@ tolerance. If so, the production path can safely replace the flux spatial
 coordinates with the footprint coordinates before compute.
 
 #+begin_src jupyter-python
-RUN_ALIGNMENT_DEBUG = True
+RUN_ALIGNMENT_DEBUG = False
 
 if RUN_ALIGNMENT_DEBUG:
     from verification_games.run_forward_model import (
@@ -639,11 +643,15 @@ footprints and other per-site/month failures are written as failed
 manifests instead of stopping the whole production loop.
 
 #+begin_src jupyter-python
+import datetime
+
 RUN_PRODUCTION = True
 PRODUCTION_SOURCE_CHUNK = 16
-PERSIST_STAGED_FLUX = False
+PERSIST_STAGED_FLUX = True
 
 if RUN_PRODUCTION:
+    print("Started production run:", datetime.datetime.now())
+
     staged_flux_for_run = None
     if PERSIST_STAGED_FLUX:
         staged_flux_for_run = open_staged_flux(staged_path)
@@ -660,6 +668,7 @@ if RUN_PRODUCTION:
 
     completed = []
     for site, start_date, end_date in iter_site_month_runs(sites=AVAILABLE_SHARED_STORE_SITES):
+        print(datetime.datetime.now())
         run = run_site_month_safe(
             site=site,
             start_date=start_date,
@@ -683,17 +692,6 @@ if RUN_PRODUCTION:
                 ["site", "start_date", "end_date", "error_type", "error_message", "output_path"]
             ].to_string(index=False)
         )
+
+    print("Production run ended:", datetime.datetime.now())
 #+end_src
-
-#+RESULTS:
-
-Started around 23:15 on 11 May 2026.
-
-#+begin_src jupyter-python
-import datetime
-
-print("Ended:", datetime.datetime.now())
-#+end_src
-
-#+RESULTS:
-: Ended: 2026-05-11 23:35:29.498089
