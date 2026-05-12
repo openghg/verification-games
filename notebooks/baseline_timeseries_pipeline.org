@@ -106,9 +106,14 @@ BASELINE_VARIABLE = "modelled_baseline"
 BASELINE_PRODUCT = "baseline_timeseries"
 BASELINE_KEYWORDS = ("modelled_baseline", "baseline_timeseries", "forward_model_intermediate")
 BASELINE_COMPRESSOR = Blosc(cname="lz4", clevel=5, shuffle=Blosc.SHUFFLE)
-BC_TIME_CHUNK = 24
+BC_TIME_CHUNK = -1
 SPATIAL_COORD_TOLERANCE = 1e-2
 HEIGHT_COORD_TOLERANCE = 1e-3
+PERSIST_BOUNDARY_CONDITIONS = True
+
+BASELINE_CLUSTER_N_WORKERS = 4
+BASELINE_CLUSTER_CORES_PER_WORKER = 1
+BASELINE_CLUSTER_MEMORY_PER_WORKER_GB = 24
 
 
 def max_abs_coord_diff(left: xr.DataArray, right: xr.DataArray) -> float:
@@ -146,9 +151,9 @@ if START_CLUSTER:
         log_path=LOG_DIR,
         account=account,
         walltime="08:00:00",
-        n_workers=8,
-        cores_per_worker=1,
-        memory_per_worker_gb=32,
+        n_workers=BASELINE_CLUSTER_N_WORKERS,
+        cores_per_worker=BASELINE_CLUSTER_CORES_PER_WORKER,
+        memory_per_worker_gb=BASELINE_CLUSTER_MEMORY_PER_WORKER_GB,
     )
     print(client)
 #+end_src
@@ -158,14 +163,15 @@ if START_CLUSTER:
 
 #+begin_src jupyter-python
 if "client" in globals():
-    wait_for_workers(client, 8)
+    wait_for_workers(client, BASELINE_CLUSTER_N_WORKERS)
 #+end_src
 
 #+RESULTS:
 
 #+begin_src jupyter-python
-cluster.close()
-client.close()
+# Run these manually when the baseline pass is finished.
+# client.close()
+# cluster.close()
 #+end_src
 
 #+RESULTS:
@@ -336,6 +342,8 @@ def open_bc_record(record, *, chunks: dict[str, int] | None = None) -> xr.Datase
     target_chunks = {dim: chunk for dim, chunk in chunks.items() if dim in ds.sizes}
     if target_chunks:
         ds = ds.chunk(target_chunks)
+    ds.attrs["games_catalog_record_id"] = str(record.id)
+    ds.attrs["games_catalog_record_path"] = str(path)
     ds.attrs = append_history(
         dict(ds.attrs),
         f"Opened boundary-condition record {record.id} from games_catalog for baseline processing.",
@@ -343,7 +351,43 @@ def open_bc_record(record, *, chunks: dict[str, int] | None = None) -> xr.Datase
     return ds
 
 
-co2_bc = open_bc_record(bc_records["co2"])
+def open_boundary_conditions(
+    records_by_species: dict[str, object],
+    *,
+    chunks: dict[str, int] | None = None,
+) -> dict[str, xr.Dataset]:
+    out = {}
+    for species in BC_SPECIES:
+        print(f"Opening {species.upper()} boundary conditions")
+        out[species] = open_bc_record(records_by_species[species], chunks=chunks)
+    return out
+
+
+def persist_boundary_conditions(
+    bc_by_species: dict[str, xr.Dataset],
+    *,
+    client=None,
+) -> dict[str, xr.Dataset]:
+    if client is None:
+        client = globals().get("client")
+    if client is None:
+        print("No Dask client is available; boundary conditions remain lazy.")
+        return bc_by_species
+
+    persisted = {}
+    for species, ds in bc_by_species.items():
+        print(f"Persisting {species.upper()} boundary conditions")
+        persisted[species] = client.persist(ds)
+    wait(list(persisted.values()))
+    print("Boundary conditions persisted.")
+    return persisted
+
+
+bc_by_species = open_boundary_conditions(bc_records)
+if PERSIST_BOUNDARY_CONDITIONS:
+    bc_by_species = persist_boundary_conditions(bc_by_species)
+
+co2_bc = bc_by_species["co2"]
 print(co2_bc)
 print(
     pd.DataFrame(
@@ -363,45 +407,6 @@ print(
 #+end_src
 
 #+RESULTS:
-#+begin_example
-<xarray.Dataset> Size: 347MB
-Dimensions:  (time: 3167, lon: 391, level: 20, lat: 293)
-Coordinates:
-  ,* time     (time) datetime64[ns] 25kB 2020-12-01T01:30:00 ... 2021-12-31T19...
-  ,* lon      (lon) float32 2kB -97.9 -97.55 -97.2 -96.84 ... 38.68 39.03 39.38
-  ,* level    (level) float32 80B 500.0 1.5e+03 2.5e+03 ... 1.85e+04 1.95e+04
-  ,* lat      (lat) float32 1kB 10.73 10.96 11.2 11.43 ... 78.59 78.82 79.06
-Data variables:
-    vmr_n    (time, lon, level) float32 99MB dask.array<chunksize=(24, 391, 20), meta=np.ndarray>
-    vmr_e    (time, lat, level) float32 74MB dask.array<chunksize=(24, 293, 20), meta=np.ndarray>
-    vmr_s    (time, lon, level) float32 99MB dask.array<chunksize=(24, 391, 20), meta=np.ndarray>
-    vmr_w    (time, lat, level) float32 74MB dask.array<chunksize=(24, 293, 20), meta=np.ndarray>
-Attributes: (12/15)
-    title:             CORSO v2025 NAME EUROPE CO2 boundary conditions
-    product:           CORSO
-    version:           v2025
-    species:           co2
-    domain:            EUROPE
-    bc_input:          CORSO_v2025
-    ...                ...
-    author:            Joram Hooghiem
-    email:             joram.hooghiem@wur.nl
-    institution:       Wageningen University & Research
-    input_record_ids:  59,60,61,62,63,64,65,66,67,68,69,70,71
-    source_paths:      /group/chem/acrg/verification_games_round_2/joram_bc_r...
-    history:           Created 2026-03-10 16:54:42 UTC by ./tm5mp.x.\n2026-04...
-  variable                dims            shape           units  \
-0    vmr_n  (time, lon, level)  (3167, 391, 20)  micromol mol-1
-1    vmr_e  (time, lat, level)  (3167, 293, 20)  micromol mol-1
-2    vmr_s  (time, lon, level)  (3167, 391, 20)  micromol mol-1
-3    vmr_w  (time, lat, level)  (3167, 293, 20)  micromol mol-1
-
-                                              chunks
-0  ((24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, ...
-1  ((24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, ...
-2  ((24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, ...
-3  ((24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, ...
-#+end_example
 
 ** Footprint particle locations
 :PROPERTIES:
@@ -436,7 +441,7 @@ def footprint_dataset_from_openghg(data) -> xr.Dataset:
     return ds
 
 
-def get_month_footprint_with_particles(
+def get_footprint_with_particles(
     *,
     site: str,
     start_date: str | pd.Timestamp,
@@ -465,6 +470,9 @@ def get_month_footprint_with_particles(
     if missing:
         raise ValueError(f"Footprint for {site} is missing particle-location variables: {missing}")
     return ds
+
+
+get_month_footprint_with_particles = get_footprint_with_particles
 #+end_src
 
 #+RESULTS:
@@ -474,7 +482,7 @@ INSPECT_SITE = "BSD"
 INSPECT_START = "2021-01-01"
 INSPECT_END = "2021-02-01"
 
-inspect_fp = get_month_footprint_with_particles(
+inspect_fp = get_footprint_with_particles(
     site=INSPECT_SITE,
     start_date=INSPECT_START,
     end_date=INSPECT_END,
@@ -658,10 +666,6 @@ def normalise_bc_for_footprint(
     if "time" in out.dims:
         out = out.reindex(time=fp["time"], method="ffill")
 
-    time_chunks = getattr(fp["particle_locations_n"], "chunksizes", {}).get("time")
-    if time_chunks:
-        out = out.chunk({"time": int(time_chunks[0])})
-
     return out
 
 
@@ -768,26 +772,50 @@ def add_source_axis(
     return out
 
 
+def boundary_condition_record_ids(
+    bc_by_species: dict[str, xr.Dataset],
+    records_by_species: dict[str, object] | None = None,
+) -> list[str]:
+    ids = []
+    for species in BC_SPECIES:
+        bc = bc_by_species[species]
+        record = records_by_species.get(species) if records_by_species is not None else None
+        record_id = bc.attrs.get("games_catalog_record_id", getattr(record, "id", ""))
+        if record_id != "":
+            ids.append(str(record_id))
+    return ids
+
+
+def boundary_condition_record_paths(
+    bc_by_species: dict[str, xr.Dataset],
+    records_by_species: dict[str, object] | None = None,
+) -> list[str]:
+    paths = []
+    for species in BC_SPECIES:
+        bc = bc_by_species[species]
+        record = records_by_species.get(species) if records_by_species is not None else None
+        path = bc.attrs.get("games_catalog_record_path", record_path(record) if record is not None else "")
+        if path != "":
+            paths.append(str(path))
+    return paths
+
+
 def build_baseline_dataset(
     *,
     fp: xr.Dataset,
-    bc_records_by_species: dict[str, object],
+    bc_by_species: dict[str, xr.Dataset],
+    bc_records_by_species: dict[str, object] | None = None,
     scenarios=DEFAULT_SCENARIOS,
     sectors=DEFAULT_SECTORS,
 ) -> xr.Dataset:
     arrays = []
-    input_record_ids = []
-    input_paths = []
     units_by_species = {}
 
     for species in BC_SPECIES:
-        record = bc_records_by_species[species]
-        bc = open_bc_record(record)
+        bc = bc_by_species[species]
         baseline = inert_modelled_baseline(bc, fp)
         units_by_species[species] = baseline.attrs.get("units", "")
         arrays.append(add_source_axis(baseline, species=species, scenarios=scenarios, sectors=sectors))
-        input_record_ids.append(str(record.id))
-        input_paths.append(record_path(record))
 
     combined = xr.concat(arrays, dim="source").transpose("time", "source")
     combined.name = BASELINE_VARIABLE
@@ -804,8 +832,12 @@ def build_baseline_dataset(
             "footprint_store": FOOTPRINT_STORE,
             "footprint_domain": FOOTPRINT_DOMAIN,
             "footprint_species": FOOTPRINT_SPECIES_FOR_BASELINE,
-            "boundary_condition_record_ids": ",".join(input_record_ids),
-            "boundary_condition_paths": json.dumps(input_paths),
+            "boundary_condition_record_ids": ",".join(
+                boundary_condition_record_ids(bc_by_species, bc_records_by_species)
+            ),
+            "boundary_condition_paths": json.dumps(
+                boundary_condition_record_paths(bc_by_species, bc_records_by_species)
+            ),
             "scenario_sector_policy": (
                 "Boundary conditions are species-specific only; values are repeated across "
                 "scenario and sector source labels for later joining with flux outputs."
@@ -830,12 +862,16 @@ SMOKE_SITE = "BSD"
 SMOKE_START = "2021-01-01"
 SMOKE_END = "2021-02-01"
 
-smoke_fp = get_month_footprint_with_particles(
+smoke_fp = get_footprint_with_particles(
     site=SMOKE_SITE,
     start_date=SMOKE_START,
     end_date=SMOKE_END,
 )
-smoke_ds = build_baseline_dataset(fp=smoke_fp, bc_records_by_species=bc_records)
+smoke_ds = build_baseline_dataset(
+    fp=smoke_fp,
+    bc_by_species=bc_by_species,
+    bc_records_by_species=bc_records,
+)
 print(smoke_ds)
 #+end_src
 
@@ -993,10 +1029,30 @@ def json_safe(value):
     return value
 
 
-def baseline_output_path(output_root: str | Path, *, site: str, start_date: str | pd.Timestamp) -> Path:
-    month = pd.Timestamp(start_date).strftime("%Y%m")
+def baseline_period_label(
+    *,
+    start_date: str | pd.Timestamp,
+    end_date: str | pd.Timestamp | None = None,
+) -> str:
+    start = pd.Timestamp(start_date)
+    if end_date is None:
+        return start.strftime("%Y%m")
+    end = pd.Timestamp(end_date)
+    if start.day == 1 and end == start + pd.offsets.MonthBegin(1):
+        return start.strftime("%Y%m")
+    return f"{start:%Y%m%d}-{end:%Y%m%d}"
+
+
+def baseline_output_path(
+    output_root: str | Path,
+    *,
+    site: str,
+    start_date: str | pd.Timestamp,
+    end_date: str | pd.Timestamp | None = None,
+) -> Path:
+    period = baseline_period_label(start_date=start_date, end_date=end_date)
     site_label = site.lower()
-    return Path(output_root) / site_label / f"{site_label}_{month}_modelled_baseline.zarr"
+    return Path(output_root) / site_label / f"{site_label}_{period}_modelled_baseline.zarr"
 
 
 def manifest_path_for_output(output_path: str | Path) -> Path:
@@ -1047,12 +1103,13 @@ def write_baseline_zarr(ds: xr.Dataset, output_path: str | Path) -> None:
 :END:
 
 #+begin_src jupyter-python
-def run_site_month_baseline(
+def run_site_baseline(
     *,
     site: str,
     start_date: str | pd.Timestamp,
     end_date: str | pd.Timestamp,
     output_dir: str | Path = BASELINE_OUTPUT_DIR,
+    bc_by_species: dict[str, xr.Dataset] | None = None,
     bc_records_by_species: dict[str, object] = bc_records,
     store: str = FOOTPRINT_STORE,
     domain: str = FOOTPRINT_DOMAIN,
@@ -1062,10 +1119,15 @@ def run_site_month_baseline(
     source_chunk: int = 16,
     skip_existing: bool = True,
 ) -> BaselineRun:
-    output_path = baseline_output_path(output_dir, site=site, start_date=start_date)
+    if bc_by_species is None:
+        bc_by_species = globals().get("bc_by_species")
+    if bc_by_species is None:
+        bc_by_species = open_boundary_conditions(bc_records_by_species)
+
+    output_path = baseline_output_path(output_dir, site=site, start_date=start_date, end_date=end_date)
     start = pd.Timestamp(start_date).strftime("%Y-%m-%d")
     end = pd.Timestamp(end_date).strftime("%Y-%m-%d")
-    bc_record_ids = [str(record.id) for record in bc_records_by_species.values()]
+    bc_record_ids = boundary_condition_record_ids(bc_by_species, bc_records_by_species)
 
     if skip_existing and output_path.exists():
         run = BaselineRun(
@@ -1086,7 +1148,7 @@ def run_site_month_baseline(
         return run
 
     print(f"Processing baseline {site.upper()} {start} to {end}")
-    fp = get_month_footprint_with_particles(
+    fp = get_footprint_with_particles(
         site=site,
         start_date=start,
         end_date=end,
@@ -1095,11 +1157,15 @@ def run_site_month_baseline(
         species=footprint_species,
         inlet=inlet,
     )
-    ds = build_baseline_dataset(fp=fp, bc_records_by_species=bc_records_by_species)
+    ds = build_baseline_dataset(
+        fp=fp,
+        bc_by_species=bc_by_species,
+        bc_records_by_species=bc_records_by_species,
+    )
     ds = ds.chunk({"time": time_chunk, "source": source_chunk})
     ds.attrs = append_history(
         dict(ds.attrs),
-        f"Prepared site/month modelled_baseline output for {site.upper()} {start} to {end}.",
+        f"Prepared site/time-window modelled_baseline output for {site.upper()} {start} to {end}.",
     )
     write_baseline_zarr(ds, output_path)
 
@@ -1121,9 +1187,9 @@ def run_site_month_baseline(
     return run
 
 
-def run_site_month_baseline_safe(**kwargs) -> BaselineRun:
+def run_site_baseline_safe(**kwargs) -> BaselineRun:
     try:
-        return run_site_month_baseline(**kwargs)
+        return run_site_baseline(**kwargs)
     except (KeyboardInterrupt, SystemExit):
         raise
     except Exception as exc:  # noqa: BLE001
@@ -1131,9 +1197,13 @@ def run_site_month_baseline_safe(**kwargs) -> BaselineRun:
         start = pd.Timestamp(kwargs["start_date"]).strftime("%Y-%m-%d")
         end = pd.Timestamp(kwargs["end_date"]).strftime("%Y-%m-%d")
         output_dir = Path(kwargs.get("output_dir", BASELINE_OUTPUT_DIR))
-        output_path = baseline_output_path(output_dir, site=site, start_date=start)
+        output_path = baseline_output_path(output_dir, site=site, start_date=start, end_date=end)
+        bc_by_species_for_ids = kwargs.get("bc_by_species", globals().get("bc_by_species"))
         bc_records_by_species = kwargs.get("bc_records_by_species", bc_records)
-        bc_record_ids = [str(record.id) for record in bc_records_by_species.values()]
+        if bc_by_species_for_ids is not None:
+            bc_record_ids = boundary_condition_record_ids(bc_by_species_for_ids, bc_records_by_species)
+        else:
+            bc_record_ids = [str(record.id) for record in bc_records_by_species.values()]
         run = BaselineRun(
             site=site,
             start_date=start,
@@ -1154,6 +1224,10 @@ def run_site_month_baseline_safe(**kwargs) -> BaselineRun:
         write_manifest(run)
         print(f"FAILED baseline {site} {start} to {end}: {type(exc).__name__}: {exc}")
         return run
+
+
+run_site_month_baseline = run_site_baseline
+run_site_month_baseline_safe = run_site_baseline_safe
 #+end_src
 
 #+RESULTS:
@@ -1162,11 +1236,12 @@ def run_site_month_baseline_safe(**kwargs) -> BaselineRun:
 RUN_SMOKE_WRITE = False
 
 if RUN_SMOKE_WRITE:
-    smoke_run = run_site_month_baseline_safe(
+    smoke_run = run_site_baseline_safe(
         site="BSD",
         start_date="2021-01-01",
         end_date="2021-02-01",
         output_dir=BASELINE_OUTPUT_DIR,
+        bc_by_species=bc_by_species,
         time_chunk=24,
         source_chunk=16,
         skip_existing=False,
@@ -1179,18 +1254,22 @@ if RUN_SMOKE_WRITE:
 #+begin_src jupyter-python
 RUN_BASELINE_PRODUCTION = False
 PRODUCTION_SITES = AVAILABLE_SHARED_STORE_SITES
-PRODUCTION_TIME_CHUNK = 24
+PRODUCTION_WINDOWS = [("2021-01-01", "2022-01-01")]
+# If OpenGHG retrieval or writes are easier to manage monthly, use:
+# PRODUCTION_WINDOWS = list(month_windows(start="2021-01-01", end="2022-01-01"))
+PRODUCTION_TIME_CHUNK = 168
 PRODUCTION_SOURCE_CHUNK = 16
 
 if RUN_BASELINE_PRODUCTION:
     completed = []
     for site in PRODUCTION_SITES:
-        for start_date, end_date in month_windows(start="2021-01-01", end="2022-01-01"):
-            run = run_site_month_baseline_safe(
+        for start_date, end_date in PRODUCTION_WINDOWS:
+            run = run_site_baseline_safe(
                 site=site,
                 start_date=start_date,
                 end_date=end_date,
                 output_dir=BASELINE_OUTPUT_DIR,
+                bc_by_species=bc_by_species,
                 time_chunk=PRODUCTION_TIME_CHUNK,
                 source_chunk=PRODUCTION_SOURCE_CHUNK,
                 skip_existing=True,
@@ -1213,8 +1292,9 @@ if RUN_BASELINE_PRODUCTION:
 
 #+begin_src jupyter-python
 CHECK_SITE = "BSD"
-CHECK_MONTH = "202101"
-check_path = BASELINE_OUTPUT_DIR / CHECK_SITE.lower() / f"{CHECK_SITE.lower()}_{CHECK_MONTH}_modelled_baseline.zarr"
+CHECK_START = "2021-01-01"
+CHECK_END = "2022-01-01"
+check_path = baseline_output_path(BASELINE_OUTPUT_DIR, site=CHECK_SITE, start_date=CHECK_START, end_date=CHECK_END)
 
 if check_path.exists():
     check_ds = xr.open_zarr(check_path)
