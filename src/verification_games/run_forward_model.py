@@ -6,6 +6,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 import json
+import logging
 from pathlib import Path
 import shutil
 import traceback
@@ -65,6 +66,7 @@ FP_DOT_FLUX_MODIFICATIONS = (
     "Computed footprint times staged flux and summed over latitude and longitude; "
     "baseline contribution not applied."
 )
+OPENGHG_LOGGERS = ("openghg", "openghg.retrieve")
 
 
 @dataclass(frozen=True)
@@ -152,6 +154,16 @@ def footprint_dataset_from_openghg(data) -> xr.Dataset:
     return out
 
 
+def suppress_openghg_logging(level: int = logging.CRITICAL) -> None:
+    """Suppress OpenGHG rich log output in notebook result blocks."""
+    for logger_name in OPENGHG_LOGGERS:
+        logger = logging.getLogger(logger_name)
+        logger.setLevel(level)
+        logger.propagate = False
+        for handler in logger.handlers:
+            handler.setLevel(level)
+
+
 def _validate_footprint_units(fp: xr.Dataset) -> None:
     for name in ("fp_time_resolved", "fp_residual"):
         units = fp[name].attrs.get("units")
@@ -171,6 +183,8 @@ def get_month_footprint(  # noqa: PLR0913
 ) -> xr.Dataset:
     """Retrieve one site/month footprint from OpenGHG."""
     from openghg.retrieve import get_footprint  # noqa: PLC0415
+
+    suppress_openghg_logging()
 
     kwargs = {
         "site": site.lower(),

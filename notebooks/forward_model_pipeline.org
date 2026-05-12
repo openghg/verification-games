@@ -27,6 +27,7 @@ registers that store in =games_catalog=, and runs resumable =fp_dot_flux=
 site/month jobs.
 
 #+begin_src jupyter-python
+import logging
 from pathlib import Path
 
 from dask import compute as dask_compute
@@ -59,6 +60,19 @@ from verification_games.run_forward_model import (
     run_site_month,
     run_site_month_safe,
 )
+#+end_src
+
+#+RESULTS:
+
+#+begin_src jupyter-python
+for logger_name in ("openghg", "openghg.retrieve"):
+    logger = logging.getLogger(logger_name)
+    logger.setLevel(logging.CRITICAL)
+    logger.propagate = False
+    for handler in logger.handlers:
+        handler.setLevel(logging.CRITICAL)
+
+print("Suppressed OpenGHG log output below CRITICAL.")
 #+end_src
 
 #+RESULTS:
