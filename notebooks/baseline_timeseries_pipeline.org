@@ -407,6 +407,50 @@ print(
 #+end_src
 
 #+RESULTS:
+#+begin_example
+Opening CO2 boundary conditions
+Opening O2 boundary conditions
+Persisting CO2 boundary conditions
+Persisting O2 boundary conditions
+Boundary conditions persisted.
+<xarray.Dataset> Size: 347MB
+Dimensions:  (time: 3167, lon: 391, level: 20, lat: 293)
+Coordinates:
+  ,* time     (time) datetime64[ns] 25kB 2020-12-01T01:30:00 ... 2021-12-31T19...
+  ,* lon      (lon) float32 2kB -97.9 -97.55 -97.2 -96.84 ... 38.68 39.03 39.38
+  ,* level    (level) float32 80B 500.0 1.5e+03 2.5e+03 ... 1.85e+04 1.95e+04
+  ,* lat      (lat) float32 1kB 10.73 10.96 11.2 11.43 ... 78.59 78.82 79.06
+Data variables:
+    vmr_n    (time, lon, level) float32 99MB dask.array<chunksize=(3167, 391, 20), meta=np.ndarray>
+    vmr_e    (time, lat, level) float32 74MB dask.array<chunksize=(3167, 293, 20), meta=np.ndarray>
+    vmr_s    (time, lon, level) float32 99MB dask.array<chunksize=(3167, 391, 20), meta=np.ndarray>
+    vmr_w    (time, lat, level) float32 74MB dask.array<chunksize=(3167, 293, 20), meta=np.ndarray>
+Attributes: (12/17)
+    title:                      CORSO v2025 NAME EUROPE CO2 boundary conditions
+    product:                    CORSO
+    version:                    v2025
+    species:                    co2
+    domain:                     EUROPE
+    bc_input:                   CORSO_v2025
+    ...                         ...
+    institution:                Wageningen University & Research
+    input_record_ids:           59,60,61,62,63,64,65,66,67,68,69,70,71
+    source_paths:               /group/chem/acrg/verification_games_round_2/j...
+    history:                    Created 2026-03-10 16:54:42 UTC by ./tm5mp.x....
+    games_catalog_record_id:    72
+    games_catalog_record_path:  /group/chem/acrg/verification_games_round_2/g...
+  variable                dims            shape           units  \
+0    vmr_n  (time, lon, level)  (3167, 391, 20)  micromol mol-1
+1    vmr_e  (time, lat, level)  (3167, 293, 20)  micromol mol-1
+2    vmr_s  (time, lon, level)  (3167, 391, 20)  micromol mol-1
+3    vmr_w  (time, lat, level)  (3167, 293, 20)  micromol mol-1
+
+                     chunks
+0  ((3167,), (391,), (20,))
+1  ((3167,), (293,), (20,))
+2  ((3167,), (391,), (20,))
+3  ((3167,), (293,), (20,))
+#+end_example
 
 ** Footprint particle locations
 :PROPERTIES:
@@ -897,7 +941,7 @@ Attributes:
     boundary_condition_record_ids:  72,73
     boundary_condition_paths:       ["/group/chem/acrg/verification_games_rou...
     scenario_sector_policy:         Boundary conditions are species-specific ...
-    history:                        2026-05-12 11:02:10.048639+00:00 bm13805@...
+    history:                        2026-05-12 12:17:36.345606+00:00 bm13805@...
 #+end_example
 
 #+begin_src jupyter-python
@@ -909,10 +953,6 @@ print(smoke_base.isel(time=slice(0, 24)).compute())
 #+end_src
 
 #+RESULTS:
-:RESULTS:
-#+begin_src jupyter-python
-smoke_base.mean("time").compute().to_dataframe(name=BASELINE_VARIABLE)
-#+end_src
 #+begin_example
 <xarray.DataArray 'modelled_baseline' (time: 744, source: 8)> Size: 24kB
 dask.array<getitem, shape=(744, 8), dtype=float32, chunksize=(24, 8), chunktype=numpy.ndarray>
@@ -983,7 +1023,6 @@ Attributes:
     comment:                  Computed for inert species; no lifetime or loss...
     source_units_by_species:  {"co2": "micromol mol-1", "o2": "micromol mol-1"}
 #+end_example
-:END:
 #+RESULTS:
 
 ** Output helpers
@@ -1250,9 +1289,11 @@ if RUN_SMOKE_WRITE:
 #+end_src
 
 #+RESULTS:
+: Processing baseline BSD 2021-01-01 to 2021-02-01
+: BaselineRun(site='BSD', start_date='2021-01-01', end_date='2021-02-01', output_path='/group/chem/acrg/verification_games_round_2/forward_model_intermediates/modelled_baseline/bsd/bsd_202101_modelled_baseline.zarr', footprint_store='shared_store_zarr', footprint_domain='europe', footprint_species='co2', boundary_condition_record_ids=['72', '73'], time_chunk=24, source_chunk=16, created_at='2026-05-12T12:18:37.540318+00:00', status='written', error_type=None, error_message=None, error_traceback=None)
 
 #+begin_src jupyter-python
-RUN_BASELINE_PRODUCTION = False
+RUN_BASELINE_PRODUCTION = True
 PRODUCTION_SITES = AVAILABLE_SHARED_STORE_SITES
 PRODUCTION_WINDOWS = [("2021-01-01", "2022-01-01")]
 # If OpenGHG retrieval or writes are easier to manage monthly, use:
@@ -1284,6 +1325,42 @@ if RUN_BASELINE_PRODUCTION:
 #+end_src
 
 #+RESULTS:
+#+begin_example
+Processing baseline BIR 2021-01-01 to 2022-01-01
+Processing baseline BSD 2021-01-01 to 2022-01-01
+Processing baseline CBW 2021-01-01 to 2022-01-01
+Processing baseline CMN 2021-01-01 to 2022-01-01
+Processing baseline GAT 2021-01-01 to 2022-01-01
+Processing baseline HEI 2021-01-01 to 2022-01-01
+Processing baseline HEL 2021-01-01 to 2022-01-01
+Processing baseline HFD 2021-01-01 to 2022-01-01
+Processing baseline HPB 2021-01-01 to 2022-01-01
+Processing baseline HTM 2021-01-01 to 2022-01-01
+Processing baseline HUN 2021-01-01 to 2022-01-01
+Processing baseline JFJ 2021-01-01 to 2022-01-01
+Processing baseline KIT 2021-01-01 to 2022-01-01
+Processing baseline KRE 2021-01-01 to 2022-01-01
+Processing baseline LIN 2021-01-01 to 2022-01-01
+Processing baseline LUT 2021-01-01 to 2022-01-01
+Processing baseline MHD 2021-01-01 to 2022-01-01
+Processing baseline NOR 2021-01-01 to 2022-01-01
+Processing baseline OPE 2021-01-01 to 2022-01-01
+Processing baseline OXK 2021-01-01 to 2022-01-01
+Processing baseline PAL 2021-01-01 to 2022-01-01
+Processing baseline RGL 2021-01-01 to 2022-01-01
+Processing baseline SAC 2021-01-01 to 2022-01-01
+Processing baseline SSL 2021-01-01 to 2022-01-01
+Processing baseline STE 2021-01-01 to 2022-01-01
+Processing baseline TAC 2021-01-01 to 2022-01-01
+Processing baseline TOH 2021-01-01 to 2022-01-01
+Processing baseline TRN 2021-01-01 to 2022-01-01
+Processing baseline UTO 2021-01-01 to 2022-01-01
+Processing baseline WAO 2021-01-01 to 2022-01-01
+Processing baseline WES 2021-01-01 to 2022-01-01
+status
+written    31
+Name: count, dtype: int64
+#+end_example
 
 ** Open written intermediates
 :PROPERTIES:
@@ -1297,11 +1374,65 @@ CHECK_END = "2022-01-01"
 check_path = baseline_output_path(BASELINE_OUTPUT_DIR, site=CHECK_SITE, start_date=CHECK_START, end_date=CHECK_END)
 
 if check_path.exists():
-    check_ds = xr.open_zarr(check_path)
+    check_ds = xr.open_zarr(check_path).compute()
     print(check_ds)
-    display(check_ds[BASELINE_VARIABLE].sel(source=check_ds["source"].where(check_ds["games_scenario"] == "BASE", drop=True)))
+    print(check_ds[BASELINE_VARIABLE].sel(source=check_ds["source"].where(check_ds["games_scenario"] == "BASE", drop=True)))
 else:
     print(f"No baseline output yet: {check_path}")
 #+end_src
 
 #+RESULTS:
+#+begin_example
+<xarray.Dataset> Size: 1MB
+Dimensions:            (time: 5832, source: 48)
+Coordinates:
+  ,* time               (time) datetime64[ns] 47kB 2021-01-01 ... 2021-08-31T2...
+  ,* source             (source) object 384B 'co2_ATEN_GPP' ... 'o2_PTEN_ocean'
+    games_scenario     (source) object 384B 'ATEN' 'ATEN' ... 'PTEN' 'PTEN'
+    sector             (source) object 384B 'GPP' 'TER' 'FF' ... 'FF' 'ocean'
+    species            (source) object 384B 'co2' 'co2' 'co2' ... 'o2' 'o2' 'o2'
+Data variables:
+    modelled_baseline  (time, source) float32 1MB 0.0004188 0.0004188 ... 0.2093
+Attributes:
+    boundary_condition_paths:       ["/group/chem/acrg/verification_games_rou...
+    boundary_condition_record_ids:  72,73
+    footprint_domain:               europe
+    footprint_species:              co2
+    footprint_store:                shared_store_zarr
+    history:                        2026-05-12 12:19:34.170159+00:00 bm13805@...
+    keywords:                       modelled_baseline, baseline_timeseries, f...
+    product:                        baseline_timeseries
+    scenario_sector_policy:         Boundary conditions are species-specific ...
+    title:                          Verification-games modelled baseline inte...
+<xarray.DataArray 'modelled_baseline' (time: 5832, source: 8)> Size: 187kB
+array([[0.00041877, 0.00041877, 0.00041877, ..., 0.2092979 , 0.2092979 ,
+        0.2092979 ],
+       [0.0004181 , 0.0004181 , 0.0004181 , ..., 0.20928858, 0.20928858,
+        0.20928858],
+       [0.00041805, 0.00041805, 0.00041805, ..., 0.20930399, 0.20930399,
+        0.20930399],
+       ...,
+       [0.00040976, 0.00040976, 0.00040976, ..., 0.20931834, 0.20931834,
+        0.20931834],
+       [0.00040975, 0.00040975, 0.00040975, ..., 0.20931691, 0.20931691,
+        0.20931691],
+       [0.0004097 , 0.0004097 , 0.0004097 , ..., 0.20931782, 0.20931782,
+        0.20931782]], shape=(5832, 8), dtype=float32)
+Coordinates:
+  ,* time            (time) datetime64[ns] 47kB 2021-01-01 ... 2021-08-31T23:0...
+  ,* source          (source) object 64B 'co2_BASE_GPP' ... 'o2_BASE_ocean'
+    games_scenario  (source) object 64B 'BASE' 'BASE' 'BASE' ... 'BASE' 'BASE'
+    sector          (source) object 64B 'GPP' 'TER' 'FF' ... 'TER' 'FF' 'ocean'
+    species         (source) object 64B 'co2' 'co2' 'co2' ... 'o2' 'o2' 'o2'
+Attributes:
+    comment:                  Computed for inert species; no lifetime or loss...
+    long_name:                Modelled baseline mole fraction from boundary-c...
+    source_units_by_species:  {"co2": "micromol mol-1", "o2": "micromol mol-1"}
+    species:                  co2
+    units:                    micromol mol-1
+#+end_example
+
+* TODO Store results in =ogcat=
+
+- [ ] store raw .zarr results by moving them into =ogcat= managed storage
+- [ ] consider a derived product split by scenario, with all sites stacked (closer to Auke's format)
