@@ -156,6 +156,13 @@ if "client" in globals():
 
 #+RESULTS:
 
+#+begin_src jupyter-python
+cluster.close()
+client.close()
+#+end_src
+
+#+RESULTS:
+
 *** Dashboard
 
 #+name: dashboard_port
