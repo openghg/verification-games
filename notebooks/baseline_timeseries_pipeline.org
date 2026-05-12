@@ -104,6 +104,13 @@ BASELINE_VARIABLE = "modelled_baseline"
 BASELINE_PRODUCT = "baseline_timeseries"
 BASELINE_KEYWORDS = ("modelled_baseline", "baseline_timeseries", "forward_model_intermediate")
 BASELINE_COMPRESSOR = Blosc(cname="lz4", clevel=5, shuffle=Blosc.SHUFFLE)
+BC_TIME_CHUNK = 24
+SPATIAL_COORD_TOLERANCE = 1e-7
+HEIGHT_COORD_TOLERANCE = 1e-6
+
+
+def max_abs_coord_diff(left: xr.DataArray, right: xr.DataArray) -> float:
+    return float(np.nanmax(np.abs(np.asarray(left.values) - np.asarray(right.values))))
 
 games_cat = open_games_catalog(CATALOG_PATH)
 print(games_cat.describe())
@@ -131,13 +138,15 @@ START_CLUSTER = True
 
 if START_CLUSTER:
     account = load_slurm_account("slurm.toml")
+    # Baseline processing uses BC curtains and particle-location arrays,
+    # which are much smaller than fp_dot_flux production arrays.
     cluster, client = make_slurm_cluster(
         log_path=LOG_DIR,
         account=account,
-        walltime="12:00:00",
-        n_workers=16,
-        cores_per_worker=2,
-        memory_per_worker_gb=48,
+        walltime="08:00:00",
+        n_workers=8,
+        cores_per_worker=1,
+        memory_per_worker_gb=32,
     )
     print(client)
 #+end_src
@@ -323,9 +332,12 @@ print(bc_record_df)
 
 #+begin_src jupyter-python
 def open_bc_record(record, *, chunks: dict[str, int] | None = None) -> xr.Dataset:
-    chunks = chunks or {"time": 8}
+    chunks = chunks or {"time": BC_TIME_CHUNK, "lat": -1, "lon": -1, "level": -1}
     path = record_path(record)
-    ds = xr.open_dataset(path, chunks=chunks)
+    ds = xr.open_dataset(path, chunks={})
+    target_chunks = {dim: chunk for dim, chunk in chunks.items() if dim in ds.sizes}
+    if target_chunks:
+        ds = ds.chunk(target_chunks)
     ds.attrs = append_history(
         dict(ds.attrs),
         f"Opened boundary-condition record {record.id} from games_catalog for baseline processing.",
@@ -353,47 +365,6 @@ print(
 #+end_src
 
 #+RESULTS:
-#+begin_example
-<xarray.Dataset> Size: 347MB
-Dimensions:  (time: 3167, lon: 391, level: 20, lat: 293)
-Coordinates:
-  ,* time     (time) datetime64[ns] 25kB 2020-12-01T01:30:00 ... 2021-12-31T19...
-  ,* lon      (lon) float32 2kB -97.9 -97.55 -97.2 -96.84 ... 38.68 39.03 39.38
-  ,* level    (level) float32 80B 500.0 1.5e+03 2.5e+03 ... 1.85e+04 1.95e+04
-  ,* lat      (lat) float32 1kB 10.73 10.96 11.2 11.43 ... 78.59 78.82 79.06
-Data variables:
-    vmr_n    (time, lon, level) float32 99MB dask.array<chunksize=(8, 391, 20), meta=np.ndarray>
-    vmr_e    (time, lat, level) float32 74MB dask.array<chunksize=(8, 293, 20), meta=np.ndarray>
-    vmr_s    (time, lon, level) float32 99MB dask.array<chunksize=(8, 391, 20), meta=np.ndarray>
-    vmr_w    (time, lat, level) float32 74MB dask.array<chunksize=(8, 293, 20), meta=np.ndarray>
-Attributes: (12/15)
-    title:             CORSO v2025 NAME EUROPE CO2 boundary conditions
-    product:           CORSO
-    version:           v2025
-    species:           co2
-    domain:            EUROPE
-    bc_input:          CORSO_v2025
-    ...                ...
-    author:            Joram Hooghiem
-    email:             joram.hooghiem@wur.nl
-    institution:       Wageningen University & Research
-    input_record_ids:  59,60,61,62,63,64,65,66,67,68,69,70,71
-    source_paths:      /group/chem/acrg/verification_games_round_2/joram_bc_r...
-    history:           Created 2026-03-10 16:54:42 UTC by ./tm5mp.x.\n2026-04...
-  variable                dims            shape           units  \
-0    vmr_n  (time, lon, level)  (3167, 391, 20)  micromol mol-1
-1    vmr_e  (time, lat, level)  (3167, 293, 20)  micromol mol-1
-2    vmr_s  (time, lon, level)  (3167, 391, 20)  micromol mol-1
-3    vmr_w  (time, lat, level)  (3167, 293, 20)  micromol mol-1
-
-                                              chunks
-0  ((8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,...
-1  ((8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,...
-2  ((8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,...
-3  ((8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,...
-/tmp/ipykernel_1242774/1347347374.py:4: UserWarning: The specified chunks separate the stored chunks along dimension "time" starting at index 8. This could degrade performance. Instead, consider rechunking after loading.
-  ds = xr.open_dataset(path, chunks=chunks)
-#+end_example
 
 ** Footprint particle locations
 :PROPERTIES:
@@ -545,15 +516,14 @@ particle age and loss terms. CO2 and O2 are inert on these transport
 timescales, so this notebook uses the equivalent inert calculation:
 
 - reindex boundary-condition time to footprint time with forward fill;
-- align =level= to footprint =height= by index if needed;
+- validate boundary-condition =level= or =height= values against footprint
+  =height= using =HEIGHT_COORD_TOLERANCE=, then rename =level= to
+  =height= and assign the footprint coordinate;
 - multiply NESW particle-location fractions by NESW boundary VMR fields;
 - sum the four curtain contributions over curtain dimensions and NESW.
 
-TODO before full production: confirm in the inspection output that the
-boundary-condition =level= coordinate is the same vertical grid as the
-footprint =height= coordinate. The current code renames =level= to
-=height= and assigns the footprint height coordinate when the lengths
-match.
+The coordinate-alignment inspection below prints maximum absolute
+lat/lon/height differences before any write cells are enabled.
 
 #+begin_src jupyter-python
 CURTAIN_TO_DIMS = {
@@ -564,44 +534,88 @@ CURTAIN_TO_DIMS = {
 }
 
 
-def _max_abs_coord_diff(left: xr.DataArray, right: xr.DataArray) -> float:
-    return float(np.nanmax(np.abs(np.asarray(left.values) - np.asarray(right.values))))
+def boundary_coordinate_alignment_table(bc: xr.Dataset, fp: xr.Dataset) -> pd.DataFrame:
+    checks = [
+        ("lat", "lat", "lat", SPATIAL_COORD_TOLERANCE),
+        ("lon", "lon", "lon", SPATIAL_COORD_TOLERANCE),
+    ]
+    if "height" in fp.coords:
+        bc_height_coord = "height" if "height" in bc.coords else "level" if "level" in bc.coords else None
+        checks.append(("height", bc_height_coord, "height", HEIGHT_COORD_TOLERANCE))
+
+    rows = []
+    for label, bc_coord, fp_coord, tolerance in checks:
+        row = {
+            "coordinate": label,
+            "bc_coordinate": bc_coord,
+            "footprint_coordinate": fp_coord,
+            "tolerance": tolerance,
+        }
+        if bc_coord is None or bc_coord not in bc.coords or fp_coord not in fp.coords:
+            row.update({"max_abs_difference": np.nan, "within_tolerance": False, "note": "missing coordinate"})
+        elif bc[bc_coord].size != fp[fp_coord].size:
+            row.update(
+                {
+                    "max_abs_difference": np.nan,
+                    "within_tolerance": False,
+                    "note": f"size mismatch: {bc[bc_coord].size} != {fp[fp_coord].size}",
+                }
+            )
+        else:
+            diff = max_abs_coord_diff(bc[bc_coord], fp[fp_coord])
+            row.update({"max_abs_difference": diff, "within_tolerance": diff <= tolerance, "note": ""})
+        rows.append(row)
+    return pd.DataFrame(rows)
 
 
 def normalise_bc_for_footprint(
     bc: xr.Dataset,
     fp: xr.Dataset,
     *,
-    spatial_tolerance: float = 1e-5,
+    spatial_tolerance: float = SPATIAL_COORD_TOLERANCE,
+    height_tolerance: float = HEIGHT_COORD_TOLERANCE,
 ) -> xr.Dataset:
     out = bc
 
-    if "level" in out.dims and "height" in fp.dims and "height" not in out.dims:
-        out = out.rename({"level": "height"})
-        if out.sizes["height"] == fp.sizes["height"]:
-            out = out.assign_coords(height=fp["height"])
-            out.attrs["height_alignment_note"] = (
-                "Renamed boundary-condition level to footprint height by index. "
-                "Confirm this is physically correct before full production."
-            )
-        else:
+    if "level" in out.dims and "height" in out.dims:
+        raise ValueError("Boundary-condition dataset has both level and height dimensions.")
+
+    bc_height_dim = "height" if "height" in out.dims else "level" if "level" in out.dims else None
+    if bc_height_dim and "height" in fp.dims:
+        if out.sizes[bc_height_dim] != fp.sizes["height"]:
             raise ValueError(
-                "Boundary-condition level dimension cannot be aligned to footprint height: "
-                f"{out.sizes['height']} != {fp.sizes['height']}"
+                "Boundary-condition vertical dimension cannot be aligned to footprint height: "
+                f"{out.sizes[bc_height_dim]} != {fp.sizes['height']}"
             )
+        if bc_height_dim not in out.coords or "height" not in fp.coords:
+            raise ValueError("Cannot validate BC/footprint height alignment because a height coordinate is missing.")
+        height_diff = max_abs_coord_diff(out[bc_height_dim], fp["height"])
+        if height_diff > height_tolerance:
+            raise ValueError(
+                f"Boundary-condition {bc_height_dim} differs from footprint height by {height_diff}, "
+                f"above tolerance {height_tolerance}."
+            )
+        if bc_height_dim == "level":
+            out = out.rename({"level": "height"})
+        out = out.assign_coords(height=fp["height"])
+        out.attrs["height_alignment_note"] = (
+            "Boundary-condition vertical coordinate matched footprint height "
+            f"within {height_tolerance}; assigned footprint height coordinate."
+        )
 
     for dim in ("lat", "lon"):
         if dim not in out.dims or dim not in fp.dims:
             continue
         if out.sizes[dim] != fp.sizes[dim]:
             raise ValueError(f"Boundary-condition {dim} size differs from footprint {dim} size.")
-        if dim in out.coords:
-            diff = _max_abs_coord_diff(out[dim], fp[dim])
-            if diff > spatial_tolerance:
-                raise ValueError(
-                    f"Boundary-condition {dim} differs from footprint {dim} by {diff}, "
-                    f"above tolerance {spatial_tolerance}."
-                )
+        if dim not in out.coords or dim not in fp.coords:
+            raise ValueError(f"Cannot validate BC/footprint {dim} alignment because a coordinate is missing.")
+        diff = max_abs_coord_diff(out[dim], fp[dim])
+        if diff > spatial_tolerance:
+            raise ValueError(
+                f"Boundary-condition {dim} differs from footprint {dim} by {diff}, "
+                f"above tolerance {spatial_tolerance}."
+            )
         out = out.assign_coords({dim: fp[dim]})
 
     if "time" in out.dims:
@@ -663,6 +677,13 @@ def inert_modelled_baseline(bc: xr.Dataset, fp: xr.Dataset) -> xr.DataArray:
     baseline.attrs["long_name"] = "Modelled baseline mole fraction from boundary-condition curtains"
     baseline.attrs["comment"] = "Computed for inert species; no lifetime or loss term applied."
     return baseline
+#+end_src
+
+#+RESULTS:
+
+#+begin_src jupyter-python
+coord_alignment_df = boundary_coordinate_alignment_table(co2_bc, inspect_fp)
+print(coord_alignment_df.to_string(index=False))
 #+end_src
 
 #+RESULTS:
@@ -777,56 +798,6 @@ print(smoke_ds)
 #+end_src
 
 #+RESULTS:
-:RESULTS:
-# [goto error]
-#+begin_example
----------------------------------------------------------------------------
-ValueError                                Traceback (most recent call last)
-Cell In[16], line 10
-      6     site=SMOKE_SITE,
-      7     start_date=SMOKE_START,
-      8     end_date=SMOKE_END,
-      9 )
----> 10 smoke_ds = build_baseline_dataset(fp=smoke_fp, bc_records_by_species=bc_records)
-     11 print(smoke_ds)
-
-Cell In[15], line 53, in build_baseline_dataset(fp, bc_records_by_species, scenarios, sectors)
-     49
-     50     for species in BC_SPECIES:
-     51         record = bc_records_by_species[species]
-     52         bc = open_bc_record(record)
----> 53         baseline = inert_modelled_baseline(bc, fp)
-     54         units_by_species[species] = baseline.attrs.get("units", "")
-     55         arrays.append(add_source_axis(baseline, species=species, scenarios=scenarios, sectors=sectors))
-     56         input_record_ids.append(str(record.id))
-
-Cell In[14], line 85, in inert_modelled_baseline(bc, fp)
-     84 def inert_modelled_baseline(bc: xr.Dataset, fp: xr.Dataset) -> xr.DataArray:
----> 85     sensitivities = inert_baseline_sensitivities(bc, fp)
-     86     components = []
-     87     curtains = []
-     88     for direction, dims in CURTAIN_TO_DIMS.items():
-
-Cell In[14], line 60, in inert_baseline_sensitivities(bc, fp)
-     59 def inert_baseline_sensitivities(bc: xr.Dataset, fp: xr.Dataset) -> xr.Dataset:
----> 60     bc_aligned = normalise_bc_for_footprint(bc, fp)
-     61     missing = [f"vmr_{direction}" for direction in "nesw" if f"vmr_{direction}" not in bc_aligned]
-     62     if missing:
-     63         raise ValueError(f"Boundary-condition dataset is missing variables: {missing}")
-
-Cell In[14], line 43, in normalise_bc_for_footprint(bc, fp, spatial_tolerance)
-     39             raise ValueError(f"Boundary-condition {dim} size differs from footprint {dim} size.")
-     40         if dim in out.coords:
-     41             diff = _max_abs_coord_diff(out[dim], fp[dim])
-     42             if diff > spatial_tolerance:
----> 43                 raise ValueError(
-     44                     f"Boundary-condition {dim} differs from footprint {dim} by {diff}, "
-     45                     f"above tolerance {spatial_tolerance}."
-     46                 )
-
-ValueError: Boundary-condition lat differs from footprint lat by 6.866455078125e-05, above tolerance 1e-05.
-#+end_example
-:END:
 
 #+begin_src jupyter-python
 base_sources = smoke_ds["source"].where(smoke_ds["games_scenario"] == "BASE", drop=True)
@@ -837,33 +808,12 @@ smoke_base.isel(time=slice(0, 24)).compute()
 #+end_src
 
 #+RESULTS:
-:RESULTS:
-# [goto error]
-: ---------------------------------------------------------------------------
-: NameError                                 Traceback (most recent call last)
-: Cell In[17], line 1
-: ----> 1 base_sources = smoke_ds["source"].where(smoke_ds["games_scenario"] == "BASE", drop=True)
-:       2 smoke_base = smoke_ds[BASELINE_VARIABLE].sel(source=base_sources)
-:       3
-:       4 print(smoke_base)
-:
-: NameError: name 'smoke_ds' is not defined
-:END:
 
 #+begin_src jupyter-python
 smoke_base.mean("time").compute().to_dataframe(name=BASELINE_VARIABLE)
 #+end_src
 
 #+RESULTS:
-:RESULTS:
-# [goto error]
-: ---------------------------------------------------------------------------
-: NameError                                 Traceback (most recent call last)
-: Cell In[18], line 1
-: ----> 1 smoke_base.mean("time").compute().to_dataframe(name=BASELINE_VARIABLE)
-:
-: NameError: name 'smoke_base' is not defined
-:END:
 
 ** Output helpers
 :PROPERTIES:

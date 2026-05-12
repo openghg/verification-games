@@ -1020,4 +1020,589 @@ Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/
 Running fp_dot_flux for HEI 2021-03
 Fetching footprint: {'site': 'hei', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-03-01', 'end_date': '2021-04-01'}
 Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hei/.hei_202103_fp_dot_flux.zarr.998929574ea0465990af7e7f2ef3c3ab.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hei/hei_202103_fp_dot_flux.zarr
+2026-05-12 10:01:31.296720
+Running fp_dot_flux for HEI 2021-04
+Fetching footprint: {'site': 'hei', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-04-01', 'end_date': '2021-05-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hei/.hei_202104_fp_dot_flux.zarr.1f5a42f2462449c8833a36574760e6d9.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hei/hei_202104_fp_dot_flux.zarr
+2026-05-12 10:02:25.480765
+Running fp_dot_flux for HEI 2021-05
+Fetching footprint: {'site': 'hei', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-05-01', 'end_date': '2021-06-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hei/.hei_202105_fp_dot_flux.zarr.b58bb739f7c14f02b4474252b16d0593.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hei/hei_202105_fp_dot_flux.zarr
+2026-05-12 10:03:20.977541
+Running fp_dot_flux for HEI 2021-06
+Fetching footprint: {'site': 'hei', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-06-01', 'end_date': '2021-07-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hei/.hei_202106_fp_dot_flux.zarr.dab78bd2b5fd4c6f8e4e7f5fc4a75126.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hei/hei_202106_fp_dot_flux.zarr
+2026-05-12 10:04:11.509240
+Running fp_dot_flux for HEI 2021-07
+Fetching footprint: {'site': 'hei', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-07-01', 'end_date': '2021-08-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hei/.hei_202107_fp_dot_flux.zarr.9800ea164d6642d0a820a59fe9c99ae0.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hei/hei_202107_fp_dot_flux.zarr
+2026-05-12 10:04:59.706500
+Running fp_dot_flux for HEI 2021-08
+Fetching footprint: {'site': 'hei', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-08-01', 'end_date': '2021-09-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hei/.hei_202108_fp_dot_flux.zarr.3740fb866ccc46ca9581fe9f443b8faa.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hei/hei_202108_fp_dot_flux.zarr
+2026-05-12 10:05:51.482066
+Running fp_dot_flux for HEI 2021-09
+Fetching footprint: {'site': 'hei', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-09-01', 'end_date': '2021-10-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hei/.hei_202109_fp_dot_flux.zarr.4aa51b7750904368a09f66b8c81c9f2a.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hei/hei_202109_fp_dot_flux.zarr
+2026-05-12 10:06:44.484505
+Running fp_dot_flux for HEI 2021-10
+Fetching footprint: {'site': 'hei', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-10-01', 'end_date': '2021-11-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hei/.hei_202110_fp_dot_flux.zarr.882826cf20074dbb9c93055c6a5d90a9.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hei/hei_202110_fp_dot_flux.zarr
+2026-05-12 10:07:43.325440
+Running fp_dot_flux for HEI 2021-11
+Fetching footprint: {'site': 'hei', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-11-01', 'end_date': '2021-12-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hei/.hei_202111_fp_dot_flux.zarr.a7592ab4796e43e0a9454f44c4a0a7ce.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hei/hei_202111_fp_dot_flux.zarr
+2026-05-12 10:08:36.477101
+Running fp_dot_flux for HEI 2021-12
+Fetching footprint: {'site': 'hei', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-12-01', 'end_date': '2022-01-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hei/.hei_202112_fp_dot_flux.zarr.df16b80c29b54c3aa83fb97444ddedec.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hei/hei_202112_fp_dot_flux.zarr
+2026-05-12 10:09:30.326589
+Running fp_dot_flux for HEL 2021-01
+Fetching footprint: {'site': 'hel', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-01-01', 'end_date': '2021-02-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/.hel_202101_fp_dot_flux.zarr.eef83f270f0b4499bbdd485767ae267e.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/hel_202101_fp_dot_flux.zarr
+2026-05-12 10:10:21.084968
+Running fp_dot_flux for HEL 2021-02
+Fetching footprint: {'site': 'hel', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-02-01', 'end_date': '2021-03-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/.hel_202102_fp_dot_flux.zarr.d58df3f8522844718b5282bdf4482f57.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/hel_202102_fp_dot_flux.zarr
+2026-05-12 10:11:10.172502
+Running fp_dot_flux for HEL 2021-03
+Fetching footprint: {'site': 'hel', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-03-01', 'end_date': '2021-04-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/.hel_202103_fp_dot_flux.zarr.ee66efdd999b43b7b702cb871c646e00.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/hel_202103_fp_dot_flux.zarr
+2026-05-12 10:12:04.299539
+Running fp_dot_flux for HEL 2021-04
+Fetching footprint: {'site': 'hel', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-04-01', 'end_date': '2021-05-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/.hel_202104_fp_dot_flux.zarr.0757b7d2600644a6b6837fc4d085e29e.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/hel_202104_fp_dot_flux.zarr
+2026-05-12 10:12:59.044684
+Running fp_dot_flux for HEL 2021-05
+Fetching footprint: {'site': 'hel', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-05-01', 'end_date': '2021-06-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/.hel_202105_fp_dot_flux.zarr.bfa7c9d177ac49fa829afa40952d2947.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/hel_202105_fp_dot_flux.zarr
+2026-05-12 10:13:52.787312
+Running fp_dot_flux for HEL 2021-06
+Fetching footprint: {'site': 'hel', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-06-01', 'end_date': '2021-07-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/.hel_202106_fp_dot_flux.zarr.e15612d96bed422da100e3b82510475e.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/hel_202106_fp_dot_flux.zarr
+2026-05-12 10:14:46.667058
+Running fp_dot_flux for HEL 2021-07
+Fetching footprint: {'site': 'hel', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-07-01', 'end_date': '2021-08-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/.hel_202107_fp_dot_flux.zarr.e9421f6434774f94b1308a1c1b89fef6.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/hel_202107_fp_dot_flux.zarr
+2026-05-12 10:15:42.628183
+Running fp_dot_flux for HEL 2021-08
+Fetching footprint: {'site': 'hel', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-08-01', 'end_date': '2021-09-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/.hel_202108_fp_dot_flux.zarr.b1796965a58a490ba7f12ac813adfa94.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/hel_202108_fp_dot_flux.zarr
+2026-05-12 10:16:34.942017
+Running fp_dot_flux for HEL 2021-09
+Fetching footprint: {'site': 'hel', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-09-01', 'end_date': '2021-10-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/.hel_202109_fp_dot_flux.zarr.1a339e45352b448997ca1c9024138e90.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/hel_202109_fp_dot_flux.zarr
+2026-05-12 10:17:24.436916
+Running fp_dot_flux for HEL 2021-10
+Fetching footprint: {'site': 'hel', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-10-01', 'end_date': '2021-11-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/.hel_202110_fp_dot_flux.zarr.1264f6feceb1453a9e4f4f338c17f05a.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/hel_202110_fp_dot_flux.zarr
+2026-05-12 10:18:16.389506
+Running fp_dot_flux for HEL 2021-11
+Fetching footprint: {'site': 'hel', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-11-01', 'end_date': '2021-12-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/.hel_202111_fp_dot_flux.zarr.7c1f020bec5f490daec3cd45a37c2fad.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/hel_202111_fp_dot_flux.zarr
+2026-05-12 10:19:09.479783
+Running fp_dot_flux for HEL 2021-12
+Fetching footprint: {'site': 'hel', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-12-01', 'end_date': '2022-01-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/.hel_202112_fp_dot_flux.zarr.03e7681b66cd4e52bce39250943d3248.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hel/hel_202112_fp_dot_flux.zarr
+2026-05-12 10:20:04.939543
+Running fp_dot_flux for HFD 2021-01
+Fetching footprint: {'site': 'hfd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-01-01', 'end_date': '2021-02-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/.hfd_202101_fp_dot_flux.zarr.3b4034f1201e43589c789c288d54768b.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/hfd_202101_fp_dot_flux.zarr
+2026-05-12 10:21:02.169415
+Running fp_dot_flux for HFD 2021-02
+Fetching footprint: {'site': 'hfd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-02-01', 'end_date': '2021-03-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/.hfd_202102_fp_dot_flux.zarr.9b31d9e446284215bc456074f9b92d4e.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/hfd_202102_fp_dot_flux.zarr
+2026-05-12 10:21:54.572184
+Running fp_dot_flux for HFD 2021-03
+Fetching footprint: {'site': 'hfd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-03-01', 'end_date': '2021-04-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/.hfd_202103_fp_dot_flux.zarr.aea94cd281404485a1c2e2f761856d13.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/hfd_202103_fp_dot_flux.zarr
+2026-05-12 10:22:51.013491
+Running fp_dot_flux for HFD 2021-04
+Fetching footprint: {'site': 'hfd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-04-01', 'end_date': '2021-05-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/.hfd_202104_fp_dot_flux.zarr.028a7326a32d467e978534939ba776f3.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/hfd_202104_fp_dot_flux.zarr
+2026-05-12 10:23:43.473914
+Running fp_dot_flux for HFD 2021-05
+Fetching footprint: {'site': 'hfd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-05-01', 'end_date': '2021-06-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/.hfd_202105_fp_dot_flux.zarr.97a8fc90fcae4846b76fe59edcfbeec2.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/hfd_202105_fp_dot_flux.zarr
+2026-05-12 10:24:37.686898
+Running fp_dot_flux for HFD 2021-06
+Fetching footprint: {'site': 'hfd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-06-01', 'end_date': '2021-07-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/.hfd_202106_fp_dot_flux.zarr.db907751b37a47019797ed9a972580bd.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/hfd_202106_fp_dot_flux.zarr
+2026-05-12 10:25:25.480281
+Running fp_dot_flux for HFD 2021-07
+Fetching footprint: {'site': 'hfd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-07-01', 'end_date': '2021-08-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/.hfd_202107_fp_dot_flux.zarr.ae9f5fb86e1746d08994cca6dea0a802.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/hfd_202107_fp_dot_flux.zarr
+2026-05-12 10:26:18.807653
+Running fp_dot_flux for HFD 2021-08
+Fetching footprint: {'site': 'hfd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-08-01', 'end_date': '2021-09-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/.hfd_202108_fp_dot_flux.zarr.90d23437464b483fb3bb9ce2cb1f76b6.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/hfd_202108_fp_dot_flux.zarr
+2026-05-12 10:27:14.147670
+Running fp_dot_flux for HFD 2021-09
+Fetching footprint: {'site': 'hfd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-09-01', 'end_date': '2021-10-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/.hfd_202109_fp_dot_flux.zarr.10a0d73ab54d48e386c4529f8405e61b.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/hfd_202109_fp_dot_flux.zarr
+2026-05-12 10:28:07.245564
+Running fp_dot_flux for HFD 2021-10
+Fetching footprint: {'site': 'hfd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-10-01', 'end_date': '2021-11-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/.hfd_202110_fp_dot_flux.zarr.f4e8e3510d8747f7a02ef9f201ac1b1e.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/hfd_202110_fp_dot_flux.zarr
+2026-05-12 10:29:00.065061
+Running fp_dot_flux for HFD 2021-11
+Fetching footprint: {'site': 'hfd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-11-01', 'end_date': '2021-12-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/.hfd_202111_fp_dot_flux.zarr.9d99709d3cfe4b8a943461ccc7ab1074.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/hfd_202111_fp_dot_flux.zarr
+2026-05-12 10:29:50.743655
+Running fp_dot_flux for HFD 2021-12
+Fetching footprint: {'site': 'hfd', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-12-01', 'end_date': '2022-01-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/.hfd_202112_fp_dot_flux.zarr.9f1b128316724c1ea67700ca7a826b24.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hfd/hfd_202112_fp_dot_flux.zarr
+2026-05-12 10:30:46.306229
+Running fp_dot_flux for HPB 2021-01
+Fetching footprint: {'site': 'hpb', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-01-01', 'end_date': '2021-02-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/.hpb_202101_fp_dot_flux.zarr.c028dc509bb14f948f4e70e458a7af0d.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/hpb_202101_fp_dot_flux.zarr
+2026-05-12 10:31:56.307154
+Running fp_dot_flux for HPB 2021-02
+Fetching footprint: {'site': 'hpb', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-02-01', 'end_date': '2021-03-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/.hpb_202102_fp_dot_flux.zarr.ee78c2bed0e5490bae792415fdaf80d7.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/hpb_202102_fp_dot_flux.zarr
+2026-05-12 10:32:44.017091
+Running fp_dot_flux for HPB 2021-03
+Fetching footprint: {'site': 'hpb', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-03-01', 'end_date': '2021-04-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/.hpb_202103_fp_dot_flux.zarr.cf9af329a477411fb6c7e82df6a11ba5.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/hpb_202103_fp_dot_flux.zarr
+2026-05-12 10:33:38.163876
+Running fp_dot_flux for HPB 2021-04
+Fetching footprint: {'site': 'hpb', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-04-01', 'end_date': '2021-05-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/.hpb_202104_fp_dot_flux.zarr.84f87c4cf9c246b5b10550b94b5c7ce1.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/hpb_202104_fp_dot_flux.zarr
+2026-05-12 10:34:28.744529
+Running fp_dot_flux for HPB 2021-05
+Fetching footprint: {'site': 'hpb', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-05-01', 'end_date': '2021-06-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/.hpb_202105_fp_dot_flux.zarr.a78406190f2f4a66b4c467ead9688e85.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/hpb_202105_fp_dot_flux.zarr
+2026-05-12 10:35:25.379678
+Running fp_dot_flux for HPB 2021-06
+Fetching footprint: {'site': 'hpb', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-06-01', 'end_date': '2021-07-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/.hpb_202106_fp_dot_flux.zarr.e91854145cdc4a939daee69e43a67edf.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/hpb_202106_fp_dot_flux.zarr
+2026-05-12 10:36:18.134382
+Running fp_dot_flux for HPB 2021-07
+Fetching footprint: {'site': 'hpb', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-07-01', 'end_date': '2021-08-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/.hpb_202107_fp_dot_flux.zarr.087a834798d8448180a4000540840928.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/hpb_202107_fp_dot_flux.zarr
+2026-05-12 10:37:07.706470
+Running fp_dot_flux for HPB 2021-08
+Fetching footprint: {'site': 'hpb', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-08-01', 'end_date': '2021-09-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/.hpb_202108_fp_dot_flux.zarr.03146afcf2504d2c833d5136279609f1.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/hpb_202108_fp_dot_flux.zarr
+2026-05-12 10:37:56.975740
+Running fp_dot_flux for HPB 2021-09
+Fetching footprint: {'site': 'hpb', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-09-01', 'end_date': '2021-10-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/.hpb_202109_fp_dot_flux.zarr.a7b0027c17124568908ebe285b74f582.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/hpb_202109_fp_dot_flux.zarr
+2026-05-12 10:38:49.032369
+Running fp_dot_flux for HPB 2021-10
+Fetching footprint: {'site': 'hpb', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-10-01', 'end_date': '2021-11-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/.hpb_202110_fp_dot_flux.zarr.83bc41a4bac84e6fad1752670be8b747.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/hpb_202110_fp_dot_flux.zarr
+2026-05-12 10:39:41.227327
+Running fp_dot_flux for HPB 2021-11
+Fetching footprint: {'site': 'hpb', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-11-01', 'end_date': '2021-12-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/.hpb_202111_fp_dot_flux.zarr.4661472253764c668b5e783cbc7102f1.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/hpb_202111_fp_dot_flux.zarr
+2026-05-12 10:40:31.493721
+Running fp_dot_flux for HPB 2021-12
+Fetching footprint: {'site': 'hpb', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-12-01', 'end_date': '2022-01-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/.hpb_202112_fp_dot_flux.zarr.012de887a8d84e63a5dd122db04a83d4.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hpb/hpb_202112_fp_dot_flux.zarr
+2026-05-12 10:41:22.790867
+Running fp_dot_flux for HTM 2021-01
+Fetching footprint: {'site': 'htm', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-01-01', 'end_date': '2021-02-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/.htm_202101_fp_dot_flux.zarr.adc289842366415599239d07c090fd94.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/htm_202101_fp_dot_flux.zarr
+2026-05-12 10:42:16.191565
+Running fp_dot_flux for HTM 2021-02
+Fetching footprint: {'site': 'htm', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-02-01', 'end_date': '2021-03-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/.htm_202102_fp_dot_flux.zarr.8bec5844aeb843b5bc5fc7b178229127.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/htm_202102_fp_dot_flux.zarr
+2026-05-12 10:43:06.883661
+Running fp_dot_flux for HTM 2021-03
+Fetching footprint: {'site': 'htm', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-03-01', 'end_date': '2021-04-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/.htm_202103_fp_dot_flux.zarr.6b972ff55dc54969bdb54c662f23bc08.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/htm_202103_fp_dot_flux.zarr
+2026-05-12 10:44:01.057913
+Running fp_dot_flux for HTM 2021-04
+Fetching footprint: {'site': 'htm', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-04-01', 'end_date': '2021-05-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/.htm_202104_fp_dot_flux.zarr.1049aac823274e3db918592342edbaae.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/htm_202104_fp_dot_flux.zarr
+2026-05-12 10:44:47.488260
+Running fp_dot_flux for HTM 2021-05
+Fetching footprint: {'site': 'htm', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-05-01', 'end_date': '2021-06-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/.htm_202105_fp_dot_flux.zarr.800c3b38ec314e02a8868c0e6b47887c.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/htm_202105_fp_dot_flux.zarr
+2026-05-12 10:45:39.135048
+Running fp_dot_flux for HTM 2021-06
+Fetching footprint: {'site': 'htm', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-06-01', 'end_date': '2021-07-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/.htm_202106_fp_dot_flux.zarr.7f5117f6032a4f89b036db73754f8e26.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/htm_202106_fp_dot_flux.zarr
+2026-05-12 10:46:32.661399
+Running fp_dot_flux for HTM 2021-07
+Fetching footprint: {'site': 'htm', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-07-01', 'end_date': '2021-08-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/.htm_202107_fp_dot_flux.zarr.f858717ccf474fd79f8f55ec31e0b36c.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/htm_202107_fp_dot_flux.zarr
+2026-05-12 10:47:28.803224
+Running fp_dot_flux for HTM 2021-08
+Fetching footprint: {'site': 'htm', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-08-01', 'end_date': '2021-09-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/.htm_202108_fp_dot_flux.zarr.1e34a25fdec846e08f9050beb73e6572.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/htm_202108_fp_dot_flux.zarr
+2026-05-12 10:48:19.273168
+Running fp_dot_flux for HTM 2021-09
+Fetching footprint: {'site': 'htm', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-09-01', 'end_date': '2021-10-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/.htm_202109_fp_dot_flux.zarr.8c2f87ec5e77467c98cbad62243e012a.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/htm_202109_fp_dot_flux.zarr
+2026-05-12 10:49:09.571821
+Running fp_dot_flux for HTM 2021-10
+Fetching footprint: {'site': 'htm', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-10-01', 'end_date': '2021-11-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/.htm_202110_fp_dot_flux.zarr.a24bd9e3e17849cc98afac16f4230cea.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/htm_202110_fp_dot_flux.zarr
+2026-05-12 10:49:58.841704
+Running fp_dot_flux for HTM 2021-11
+Fetching footprint: {'site': 'htm', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-11-01', 'end_date': '2021-12-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/.htm_202111_fp_dot_flux.zarr.4bb7e7ef2ca34bb99c04634d5f3f19e7.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/htm_202111_fp_dot_flux.zarr
+2026-05-12 10:50:48.853084
+Running fp_dot_flux for HTM 2021-12
+Fetching footprint: {'site': 'htm', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-12-01', 'end_date': '2022-01-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/.htm_202112_fp_dot_flux.zarr.9a68f789c1b5422a98c9a2281ad697d5.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/htm/htm_202112_fp_dot_flux.zarr
+2026-05-12 10:51:40.234161
+Running fp_dot_flux for HUN 2021-01
+Fetching footprint: {'site': 'hun', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-01-01', 'end_date': '2021-02-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/.hun_202101_fp_dot_flux.zarr.8b1c809f63f04fb9ba3a325414b3fb06.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/hun_202101_fp_dot_flux.zarr
+2026-05-12 10:52:32.045102
+Running fp_dot_flux for HUN 2021-02
+Fetching footprint: {'site': 'hun', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-02-01', 'end_date': '2021-03-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/.hun_202102_fp_dot_flux.zarr.ca32e6b470754719b7d8c9ca453a7e97.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/hun_202102_fp_dot_flux.zarr
+2026-05-12 10:53:18.010248
+Running fp_dot_flux for HUN 2021-03
+Fetching footprint: {'site': 'hun', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-03-01', 'end_date': '2021-04-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/.hun_202103_fp_dot_flux.zarr.966b85507de842ccbe110a4fbb59c473.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/hun_202103_fp_dot_flux.zarr
+2026-05-12 10:54:09.685586
+Running fp_dot_flux for HUN 2021-04
+Fetching footprint: {'site': 'hun', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-04-01', 'end_date': '2021-05-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/.hun_202104_fp_dot_flux.zarr.564db96284f348ac9af206704776d63e.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/hun_202104_fp_dot_flux.zarr
+2026-05-12 10:55:01.643202
+Running fp_dot_flux for HUN 2021-05
+Fetching footprint: {'site': 'hun', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-05-01', 'end_date': '2021-06-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/.hun_202105_fp_dot_flux.zarr.beaa25f650bc4e7cb594acc1e4c12f6d.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/hun_202105_fp_dot_flux.zarr
+2026-05-12 10:55:54.150197
+Running fp_dot_flux for HUN 2021-06
+Fetching footprint: {'site': 'hun', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-06-01', 'end_date': '2021-07-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/.hun_202106_fp_dot_flux.zarr.2039d3c798b84a34a64e01493c775ac8.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/hun_202106_fp_dot_flux.zarr
+2026-05-12 10:56:45.109760
+Running fp_dot_flux for HUN 2021-07
+Fetching footprint: {'site': 'hun', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-07-01', 'end_date': '2021-08-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/.hun_202107_fp_dot_flux.zarr.d685b67014d24a6b921f16d4b2b92d98.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/hun_202107_fp_dot_flux.zarr
+2026-05-12 10:57:36.199092
+Running fp_dot_flux for HUN 2021-08
+Fetching footprint: {'site': 'hun', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-08-01', 'end_date': '2021-09-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/.hun_202108_fp_dot_flux.zarr.7b8354edd80b4ad98584554bf710e608.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/hun_202108_fp_dot_flux.zarr
+2026-05-12 10:58:27.927183
+Running fp_dot_flux for HUN 2021-09
+Fetching footprint: {'site': 'hun', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-09-01', 'end_date': '2021-10-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/.hun_202109_fp_dot_flux.zarr.2701c75feda840c19d39cc16921c3e05.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/hun_202109_fp_dot_flux.zarr
+2026-05-12 10:59:20.029177
+Running fp_dot_flux for HUN 2021-10
+Fetching footprint: {'site': 'hun', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-10-01', 'end_date': '2021-11-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/.hun_202110_fp_dot_flux.zarr.9bb6c25e5bfa4bf78432df32904fc744.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/hun_202110_fp_dot_flux.zarr
+2026-05-12 11:00:11.341346
+Running fp_dot_flux for HUN 2021-11
+Fetching footprint: {'site': 'hun', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-11-01', 'end_date': '2021-12-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/.hun_202111_fp_dot_flux.zarr.4161ccbe9fdc4b28bfae1edeb34dbf2b.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/hun_202111_fp_dot_flux.zarr
+2026-05-12 11:01:01.319386
+Running fp_dot_flux for HUN 2021-12
+Fetching footprint: {'site': 'hun', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-12-01', 'end_date': '2022-01-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/.hun_202112_fp_dot_flux.zarr.250d46d89220418594665a8cccbfafbd.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/hun/hun_202112_fp_dot_flux.zarr
+2026-05-12 11:01:55.170874
+Running fp_dot_flux for JFJ 2021-01
+Fetching footprint: {'site': 'jfj', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-01-01', 'end_date': '2021-02-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/.jfj_202101_fp_dot_flux.zarr.051dfde3cbd0407baabe967fc6526765.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/jfj_202101_fp_dot_flux.zarr
+2026-05-12 11:02:49.465582
+Running fp_dot_flux for JFJ 2021-02
+Fetching footprint: {'site': 'jfj', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-02-01', 'end_date': '2021-03-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/.jfj_202102_fp_dot_flux.zarr.e714d6ef4a674f0a88919a3187b8c606.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/jfj_202102_fp_dot_flux.zarr
+2026-05-12 11:03:36.121154
+Running fp_dot_flux for JFJ 2021-03
+Fetching footprint: {'site': 'jfj', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-03-01', 'end_date': '2021-04-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/.jfj_202103_fp_dot_flux.zarr.9f527ce08db84deb8906a4075ca42a7b.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/jfj_202103_fp_dot_flux.zarr
+2026-05-12 11:04:26.898704
+Running fp_dot_flux for JFJ 2021-04
+Fetching footprint: {'site': 'jfj', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-04-01', 'end_date': '2021-05-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/.jfj_202104_fp_dot_flux.zarr.45c6e185fbf740b198838a81064a0c6f.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/jfj_202104_fp_dot_flux.zarr
+2026-05-12 11:05:17.512097
+Running fp_dot_flux for JFJ 2021-05
+Fetching footprint: {'site': 'jfj', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-05-01', 'end_date': '2021-06-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/.jfj_202105_fp_dot_flux.zarr.1928a783321f451a954d8d1b6b306678.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/jfj_202105_fp_dot_flux.zarr
+2026-05-12 11:06:10.596529
+Running fp_dot_flux for JFJ 2021-06
+Fetching footprint: {'site': 'jfj', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-06-01', 'end_date': '2021-07-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/.jfj_202106_fp_dot_flux.zarr.0f0b3b674c364aa4905dbf8fddf48c8d.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/jfj_202106_fp_dot_flux.zarr
+2026-05-12 11:06:59.957897
+Running fp_dot_flux for JFJ 2021-07
+Fetching footprint: {'site': 'jfj', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-07-01', 'end_date': '2021-08-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/.jfj_202107_fp_dot_flux.zarr.5f52d07e5cfd41d49661f6d7ac8abddb.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/jfj_202107_fp_dot_flux.zarr
+2026-05-12 11:07:54.924166
+Running fp_dot_flux for JFJ 2021-08
+Fetching footprint: {'site': 'jfj', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-08-01', 'end_date': '2021-09-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/.jfj_202108_fp_dot_flux.zarr.27d136571ca045a6bae926502d5b156f.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/jfj_202108_fp_dot_flux.zarr
+2026-05-12 11:08:46.144110
+Running fp_dot_flux for JFJ 2021-09
+Fetching footprint: {'site': 'jfj', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-09-01', 'end_date': '2021-10-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/.jfj_202109_fp_dot_flux.zarr.adaa6419bd3b456f967f77af64afaa2c.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/jfj_202109_fp_dot_flux.zarr
+2026-05-12 11:09:37.673351
+Running fp_dot_flux for JFJ 2021-10
+Fetching footprint: {'site': 'jfj', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-10-01', 'end_date': '2021-11-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/.jfj_202110_fp_dot_flux.zarr.f197446454e043cba226217d3a12f72a.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/jfj_202110_fp_dot_flux.zarr
+2026-05-12 11:10:27.554133
+Running fp_dot_flux for JFJ 2021-11
+Fetching footprint: {'site': 'jfj', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-11-01', 'end_date': '2021-12-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/.jfj_202111_fp_dot_flux.zarr.c0e6d7d70d2842b9bfd3b7dd30ee7abd.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/jfj_202111_fp_dot_flux.zarr
+2026-05-12 11:11:17.483260
+Running fp_dot_flux for JFJ 2021-12
+Fetching footprint: {'site': 'jfj', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-12-01', 'end_date': '2022-01-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/.jfj_202112_fp_dot_flux.zarr.2bb06da8f29b41bbbf29a9a5c85b3f69.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/jfj/jfj_202112_fp_dot_flux.zarr
+2026-05-12 11:12:10.682441
+Running fp_dot_flux for KIT 2021-01
+Fetching footprint: {'site': 'kit', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-01-01', 'end_date': '2021-02-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/.kit_202101_fp_dot_flux.zarr.fe753461bedf4c1e9eddc3d16cf9bbd7.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/kit_202101_fp_dot_flux.zarr
+2026-05-12 11:13:03.315428
+Running fp_dot_flux for KIT 2021-02
+Fetching footprint: {'site': 'kit', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-02-01', 'end_date': '2021-03-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/.kit_202102_fp_dot_flux.zarr.02c0acaf0abf48f7b3c32b0cdf3f9984.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/kit_202102_fp_dot_flux.zarr
+2026-05-12 11:13:53.174387
+Running fp_dot_flux for KIT 2021-03
+Fetching footprint: {'site': 'kit', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-03-01', 'end_date': '2021-04-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/.kit_202103_fp_dot_flux.zarr.303662af96074dddb7f723f3987b7baf.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/kit_202103_fp_dot_flux.zarr
+2026-05-12 11:14:50.294698
+Running fp_dot_flux for KIT 2021-04
+Fetching footprint: {'site': 'kit', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-04-01', 'end_date': '2021-05-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/.kit_202104_fp_dot_flux.zarr.94d64966955c4db680f25cdb4d51ace5.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/kit_202104_fp_dot_flux.zarr
+2026-05-12 11:15:46.945576
+Running fp_dot_flux for KIT 2021-05
+Fetching footprint: {'site': 'kit', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-05-01', 'end_date': '2021-06-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/.kit_202105_fp_dot_flux.zarr.f3fdf1bd4fec452ab83827cddd19a3ae.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/kit_202105_fp_dot_flux.zarr
+2026-05-12 11:16:37.134179
+Running fp_dot_flux for KIT 2021-06
+Fetching footprint: {'site': 'kit', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-06-01', 'end_date': '2021-07-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/.kit_202106_fp_dot_flux.zarr.7b7660fbd4cc49dfa015104a5ae712bf.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/kit_202106_fp_dot_flux.zarr
+2026-05-12 11:17:27.256673
+Running fp_dot_flux for KIT 2021-07
+Fetching footprint: {'site': 'kit', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-07-01', 'end_date': '2021-08-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/.kit_202107_fp_dot_flux.zarr.3b6024ccc22a44b0bb453494da3b76ff.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/kit_202107_fp_dot_flux.zarr
+2026-05-12 11:18:20.838775
+Running fp_dot_flux for KIT 2021-08
+Fetching footprint: {'site': 'kit', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-08-01', 'end_date': '2021-09-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/.kit_202108_fp_dot_flux.zarr.0c8922d8118c45ea921acb909416e76a.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/kit_202108_fp_dot_flux.zarr
+2026-05-12 11:19:12.004062
+Running fp_dot_flux for KIT 2021-09
+Fetching footprint: {'site': 'kit', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-09-01', 'end_date': '2021-10-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/.kit_202109_fp_dot_flux.zarr.db1fddb3f3cf4ff9b359365a67f0c118.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/kit_202109_fp_dot_flux.zarr
+2026-05-12 11:20:02.675724
+Running fp_dot_flux for KIT 2021-10
+Fetching footprint: {'site': 'kit', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-10-01', 'end_date': '2021-11-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/.kit_202110_fp_dot_flux.zarr.220469ad0cde4edaa76396dfb7bb81d2.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/kit_202110_fp_dot_flux.zarr
+2026-05-12 11:20:57.407109
+Running fp_dot_flux for KIT 2021-11
+Fetching footprint: {'site': 'kit', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-11-01', 'end_date': '2021-12-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/.kit_202111_fp_dot_flux.zarr.5827d7889dcc4e0d89887d910fd4bd65.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/kit_202111_fp_dot_flux.zarr
+2026-05-12 11:21:52.906560
+Running fp_dot_flux for KIT 2021-12
+Fetching footprint: {'site': 'kit', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-12-01', 'end_date': '2022-01-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/.kit_202112_fp_dot_flux.zarr.2f2f9276c6974fc49585b7a9fae51b5f.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kit/kit_202112_fp_dot_flux.zarr
+2026-05-12 11:22:48.876964
+Running fp_dot_flux for KRE 2021-01
+Fetching footprint: {'site': 'kre', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-01-01', 'end_date': '2021-02-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/.kre_202101_fp_dot_flux.zarr.450170f2dea540849c43545aded28adf.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/kre_202101_fp_dot_flux.zarr
+2026-05-12 11:23:41.946530
+Running fp_dot_flux for KRE 2021-02
+Fetching footprint: {'site': 'kre', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-02-01', 'end_date': '2021-03-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/.kre_202102_fp_dot_flux.zarr.14ea90e5ef66418f962349de7b420fd6.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/kre_202102_fp_dot_flux.zarr
+2026-05-12 11:24:36.433531
+Running fp_dot_flux for KRE 2021-03
+Fetching footprint: {'site': 'kre', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-03-01', 'end_date': '2021-04-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/.kre_202103_fp_dot_flux.zarr.711b59848d684fd8a44a54b2472796bb.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/kre_202103_fp_dot_flux.zarr
+2026-05-12 11:25:31.904958
+Running fp_dot_flux for KRE 2021-04
+Fetching footprint: {'site': 'kre', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-04-01', 'end_date': '2021-05-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/.kre_202104_fp_dot_flux.zarr.55e00aeb6c434e7288ffb852444ada11.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/kre_202104_fp_dot_flux.zarr
+2026-05-12 11:26:23.210886
+Running fp_dot_flux for KRE 2021-05
+Fetching footprint: {'site': 'kre', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-05-01', 'end_date': '2021-06-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/.kre_202105_fp_dot_flux.zarr.71ebd6827dc1420885700cb434abd4bb.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/kre_202105_fp_dot_flux.zarr
+2026-05-12 11:27:12.939405
+Running fp_dot_flux for KRE 2021-06
+Fetching footprint: {'site': 'kre', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-06-01', 'end_date': '2021-07-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/.kre_202106_fp_dot_flux.zarr.f2643484e90c4bc0a7a716a5e61db3c4.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/kre_202106_fp_dot_flux.zarr
+2026-05-12 11:28:09.672876
+Running fp_dot_flux for KRE 2021-07
+Fetching footprint: {'site': 'kre', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-07-01', 'end_date': '2021-08-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/.kre_202107_fp_dot_flux.zarr.2504a1fdac284313bb596c795147fb44.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/kre_202107_fp_dot_flux.zarr
+2026-05-12 11:29:04.708164
+Running fp_dot_flux for KRE 2021-08
+Fetching footprint: {'site': 'kre', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-08-01', 'end_date': '2021-09-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/.kre_202108_fp_dot_flux.zarr.eebd4fa72e01401dbb4714d0a6ddd3a5.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/kre_202108_fp_dot_flux.zarr
+2026-05-12 11:29:56.007407
+Running fp_dot_flux for KRE 2021-09
+Fetching footprint: {'site': 'kre', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-09-01', 'end_date': '2021-10-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/.kre_202109_fp_dot_flux.zarr.07dab1192c2042bcb24a4ceba0593436.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/kre_202109_fp_dot_flux.zarr
+2026-05-12 11:30:45.119388
+Running fp_dot_flux for KRE 2021-10
+Fetching footprint: {'site': 'kre', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-10-01', 'end_date': '2021-11-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/.kre_202110_fp_dot_flux.zarr.38e6742243c94b1aa43cc71fcfa3d7a1.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/kre_202110_fp_dot_flux.zarr
+2026-05-12 11:31:34.919121
+Running fp_dot_flux for KRE 2021-11
+Fetching footprint: {'site': 'kre', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-11-01', 'end_date': '2021-12-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/.kre_202111_fp_dot_flux.zarr.0dbc3a6aa60646a7873a92658ad7337b.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/kre_202111_fp_dot_flux.zarr
+2026-05-12 11:32:25.360390
+Running fp_dot_flux for KRE 2021-12
+Fetching footprint: {'site': 'kre', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-12-01', 'end_date': '2022-01-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/.kre_202112_fp_dot_flux.zarr.632cfd0a71664792a41aa529a50dc648.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/kre/kre_202112_fp_dot_flux.zarr
+2026-05-12 11:33:18.684285
+Running fp_dot_flux for LIN 2021-01
+Fetching footprint: {'site': 'lin', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-01-01', 'end_date': '2021-02-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/.lin_202101_fp_dot_flux.zarr.c49a3a5ce22f4677bb325bb7cdade458.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/lin_202101_fp_dot_flux.zarr
+2026-05-12 11:34:12.920884
+Running fp_dot_flux for LIN 2021-02
+Fetching footprint: {'site': 'lin', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-02-01', 'end_date': '2021-03-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/.lin_202102_fp_dot_flux.zarr.0c82e3e828c9429590ff27e3301c26e9.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/lin_202102_fp_dot_flux.zarr
+2026-05-12 11:35:02.851518
+Running fp_dot_flux for LIN 2021-03
+Fetching footprint: {'site': 'lin', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-03-01', 'end_date': '2021-04-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/.lin_202103_fp_dot_flux.zarr.75c2ecfbdf23478c92bf131fe418e71f.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/lin_202103_fp_dot_flux.zarr
+2026-05-12 11:35:53.759916
+Running fp_dot_flux for LIN 2021-04
+Fetching footprint: {'site': 'lin', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-04-01', 'end_date': '2021-05-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/.lin_202104_fp_dot_flux.zarr.77478543c81e4499b068a6d4ccfebd18.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/lin_202104_fp_dot_flux.zarr
+2026-05-12 11:36:51.743156
+Running fp_dot_flux for LIN 2021-05
+Fetching footprint: {'site': 'lin', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-05-01', 'end_date': '2021-06-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/.lin_202105_fp_dot_flux.zarr.3820c10a3bb646448f64b5e57d482abd.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/lin_202105_fp_dot_flux.zarr
+2026-05-12 11:37:44.699611
+Running fp_dot_flux for LIN 2021-06
+Fetching footprint: {'site': 'lin', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-06-01', 'end_date': '2021-07-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/.lin_202106_fp_dot_flux.zarr.9907e8e217b44bb6969d5ff200a30b3d.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/lin_202106_fp_dot_flux.zarr
+2026-05-12 11:38:34.873465
+Running fp_dot_flux for LIN 2021-07
+Fetching footprint: {'site': 'lin', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-07-01', 'end_date': '2021-08-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/.lin_202107_fp_dot_flux.zarr.264306041ce94285b2e003245bb8297a.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/lin_202107_fp_dot_flux.zarr
+2026-05-12 11:39:28.539242
+Running fp_dot_flux for LIN 2021-08
+Fetching footprint: {'site': 'lin', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-08-01', 'end_date': '2021-09-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/.lin_202108_fp_dot_flux.zarr.7a9ed321388d420093675f72abd20d9e.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/lin_202108_fp_dot_flux.zarr
+2026-05-12 11:40:23.634457
+Running fp_dot_flux for LIN 2021-09
+Fetching footprint: {'site': 'lin', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-09-01', 'end_date': '2021-10-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/.lin_202109_fp_dot_flux.zarr.53125631c6d946b1a8859e759acbb396.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/lin_202109_fp_dot_flux.zarr
+2026-05-12 11:41:15.011392
+Running fp_dot_flux for LIN 2021-10
+Fetching footprint: {'site': 'lin', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-10-01', 'end_date': '2021-11-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/.lin_202110_fp_dot_flux.zarr.47a01664ddcd4332996bd512488d7ada.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/lin_202110_fp_dot_flux.zarr
+2026-05-12 11:42:08.068556
+Running fp_dot_flux for LIN 2021-11
+Fetching footprint: {'site': 'lin', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-11-01', 'end_date': '2021-12-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/.lin_202111_fp_dot_flux.zarr.c2bcad81e24e45f7b8cd5de10c10b3cf.tmp
+Moving fp_dot_flux Zarr into place: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/lin_202111_fp_dot_flux.zarr
+2026-05-12 11:42:59.955041
+Running fp_dot_flux for LIN 2021-12
+Fetching footprint: {'site': 'lin', 'domain': 'europe', 'store': 'shared_store_zarr', 'species': 'co2', 'start_date': '2021-12-01', 'end_date': '2022-01-01'}
+Writing fp_dot_flux temporary Zarr: /group/chem/acrg/verification_games_round_2/forward_model_intermediates/fp_dot_flux/lin/.lin_202112_fp_dot_flux.zarr.f497a994afbc4f4b86d4f673ae8fc615.tmp
 #+end_example
