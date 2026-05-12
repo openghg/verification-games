@@ -760,3 +760,248 @@ print(list(auke_base_co2.platform).index("BSD"))
 : 30
 
 ** Plotting
+
+#+begin_src jupyter-python
+AUKE_SITE = "BSD"
+AUKE_IDENTIFIER = 30
+AUKE_SCENARIO = "BASE"
+AUKE_MF_VARIABLES = ("mf_observed", "mf_prior", "mf_observed_minus_background", "mf_prior_minus_background")
+
+
+def open_auke_base_records():
+    records = games_cat.search(
+        where={
+            "record_type": "verification_games_obs",
+            "university_abbr": "WUR",
+            "games_scenario": AUKE_SCENARIO,
+        },
+        ignore_case=True,
+        as_record_set=True,
+    )
+    by_species = {}
+    for record in records:
+        species = record.user_metadata["species"].lower()
+        by_species[species] = record
+    return by_species
+
+
+def open_auke_species_dataset(species):
+    record = auke_base_records[species.lower()]
+    return xr.open_dataset(record.locator.value)
+
+
+def select_auke_site(ds, *, identifier=AUKE_IDENTIFIER):
+    site = ds.where(ds["number_of_identifier"] == identifier, drop=True)
+    site = site.assign_coords(time=("index", pd.DatetimeIndex(site["time"].values)))
+    site = site.swap_dims({"index": "time"}).sortby("time")
+    return site
+
+
+def add_auke_enhancement_variables(ds):
+    ds = ds.copy()
+    if "background" in ds:
+        if "mf_prior" in ds:
+            ds["mf_prior_minus_background"] = ds["mf_prior"] - ds["background"]
+            ds["mf_prior_minus_background"].attrs.update(
+                {
+                    "long_name": "mf_prior minus background",
+                    "units": ds["mf_prior"].attrs.get("units", ""),
+                }
+            )
+        if "mf_observed" in ds:
+            ds["mf_observed_minus_background"] = ds["mf_observed"] - ds["background"]
+            ds["mf_observed_minus_background"].attrs.update(
+                {
+                    "long_name": "mf_observed minus background",
+                    "units": ds["mf_observed"].attrs.get("units", ""),
+                }
+            )
+    return ds
+
+
+auke_base_records = open_auke_base_records()
+print("Auke BASE species:", sorted(auke_base_records))
+
+auke_base = {
+    species: add_auke_enhancement_variables(select_auke_site(open_auke_species_dataset(species)))
+    for species in sorted(auke_base_records)
+}
+
+for species, ds in auke_base.items():
+    print(species, ds.sizes)
+    if "platform" in ds.coords and AUKE_IDENTIFIER < ds.sizes["platform"]:
+        print("platform code", AUKE_IDENTIFIER, "=", str(ds["platform"].isel(platform=AUKE_IDENTIFIER).values))
+#+end_src
+
+#+RESULTS:
+
+#+begin_src jupyter-python
+for species, ds in auke_base.items():
+    print(f"{species.upper()} time range:", str(ds["time"].min().values), "to", str(ds["time"].max().values))
+    print("mole-fraction variables:", [name for name in AUKE_MF_VARIABLES if name in ds])
+#+end_src
+
+#+RESULTS:
+
+*** Auke base seasonal time series
+:PROPERTIES:
+:CUSTOM_ID: auke-base-seasonal-time-series
+:END:
+
+#+begin_src jupyter-python
+for species, ds in auke_base.items():
+    variables = [name for name in AUKE_MF_VARIABLES if name in ds]
+    fig, axes = plt.subplots(len(variables), 1, sharex=True, figsize=(13, 2.6 * len(variables)))
+    axes = np.atleast_1d(axes)
+
+    for ax, name in zip(axes, variables, strict=True):
+        daily = ds[name].resample(time="1D").mean()
+        ax.plot(pd.DatetimeIndex(daily["time"].values), daily.values, linewidth=1.4)
+        units = ds[name].attrs.get("units", "")
+        ax.set_title(f"Auke/WUR {AUKE_SITE} {AUKE_SCENARIO} {species.upper()} {name}: daily mean")
+        ax.set_ylabel(units)
+
+    axes[-1].set_xlabel("time")
+    fig.tight_layout()
+    plt.show()
+#+end_src
+
+#+RESULTS:
+
+*** Auke base diurnal mole-fraction cycle
+:PROPERTIES:
+:CUSTOM_ID: auke-base-diurnal-mole-fraction-cycle
+:END:
+
+#+begin_src jupyter-python
+for species, ds in auke_base.items():
+    variables = [name for name in ("mf_observed", "mf_prior", "mf_observed_minus_background", "mf_prior_minus_background") if name in ds]
+    fig, axes = plt.subplots(1, len(variables), figsize=(4.8 * len(variables), 4), sharey=False)
+    axes = np.atleast_1d(axes)
+
+    for ax, name in zip(axes, variables, strict=True):
+        hourly = ds[name].groupby("time.hour").mean()
+        ax.plot(hourly["hour"].values, hourly.values, marker="o", linewidth=1.4)
+        units = ds[name].attrs.get("units", "")
+        ax.set_title(f"Auke/WUR {AUKE_SITE} {AUKE_SCENARIO} {species.upper()} {name}: mean hour-of-day")
+        ax.set_xlabel("hour UTC")
+        ax.set_ylabel(units)
+        ax.set_xticks(np.arange(0, 24, 3))
+
+    fig.tight_layout()
+    plt.show()
+#+end_src
+
+#+RESULTS:
+
+*** Base comparison with current outputs
+:PROPERTIES:
+:CUSTOM_ID: base-comparison-with-current-outputs
+:END:
+
+#+begin_src jupyter-python
+def our_base_event(species, sectors=("GPP", "TER", "FF", "ocean")):
+    selected = select_sources(
+        bsd,
+        species=species,
+        scenarios=AUKE_SCENARIO,
+        sectors=sectors,
+    )
+    if selected.sizes.get("source", 0) == 0:
+        return None
+    return selected.sum("source")
+
+
+def daily_mean(da):
+    return da.resample(time="1D").mean()
+
+
+def scale_current_to_auke_units(current, auke_variable):
+    units = str(auke_variable.attrs.get("units", "")).strip()
+    unit_key = units.lower().replace("µ", "u")
+    if unit_key in {"ppm", "umol mol-1", "micromol mol-1", "1e-6"}:
+        scaled = current * 1.0e6
+    elif unit_key in {"ppb", "nmol mol-1", "nanomol mol-1", "1e-9"}:
+        scaled = current * 1.0e9
+    else:
+        scaled = current
+    scaled.attrs["units"] = units or current.attrs.get("units", "")
+    return scaled
+
+
+def compare_daily_auke_variable(species, variable):
+    ours = our_base_event(species)
+    if ours is None or species not in auke_base or variable not in auke_base[species]:
+        return None
+    auke_variable = auke_base[species][variable]
+    ours = scale_current_to_auke_units(ours, auke_variable)
+    ours_daily = daily_mean(ours)
+    auke_daily = daily_mean(auke_variable)
+    ours_daily, auke_daily = xr.align(ours_daily, auke_daily, join="inner")
+    return xr.Dataset({"current": ours_daily, "auke": auke_daily}).assign_attrs(
+        {"units": auke_variable.attrs.get("units", ours.attrs.get("units", ""))}
+    )
+#+end_src
+
+#+RESULTS:
+
+Raw =mf_prior= includes the background term, while the current
+=fp_dot_flux= output does not include a baseline. The most direct
+comparison here is therefore expected to be =mf_prior_minus_background=.
+
+#+begin_src jupyter-python
+COMPARE_SPECIES = "co2"
+COMPARE_VARIABLES = ("mf_prior_minus_background", "mf_observed_minus_background", "mf_prior", "mf_observed")
+
+available = [
+    variable
+    for variable in COMPARE_VARIABLES
+    if compare_daily_auke_variable(COMPARE_SPECIES, variable) is not None
+]
+
+fig, axes = plt.subplots(len(available), 1, sharex=True, figsize=(13, 2.8 * len(available)))
+axes = np.atleast_1d(axes)
+
+for ax, variable in zip(axes, available, strict=True):
+    comp = compare_daily_auke_variable(COMPARE_SPECIES, variable)
+    ax.plot(pd.DatetimeIndex(comp["time"].values), comp["current"].values, label="current fp_dot_flux", linewidth=1.4)
+    ax.plot(pd.DatetimeIndex(comp["time"].values), comp["auke"].values, label=f"Auke/WUR {variable}", linewidth=1.4)
+    ax.set_title(f"{AUKE_SITE} {AUKE_SCENARIO} {COMPARE_SPECIES.upper()}: daily mean comparison")
+    ax.set_ylabel(comp.attrs.get("units", bsd.attrs.get("units", "1")))
+    ax.legend(fontsize=8)
+
+axes[-1].set_xlabel("time")
+fig.tight_layout()
+plt.show()
+#+end_src
+
+#+RESULTS:
+
+#+begin_src jupyter-python
+COMPARE_SPECIES = "co2"
+COMPARE_VARIABLES = ("mf_prior_minus_background", "mf_observed_minus_background")
+
+fig, axes = plt.subplots(1, len(COMPARE_VARIABLES), figsize=(13, 4), sharey=False)
+axes = np.atleast_1d(axes)
+
+for ax, variable in zip(axes, COMPARE_VARIABLES, strict=True):
+    if compare_daily_auke_variable(COMPARE_SPECIES, variable) is None:
+        ax.set_visible(False)
+        continue
+    auke_variable = auke_base[COMPARE_SPECIES][variable]
+    current = scale_current_to_auke_units(our_base_event(COMPARE_SPECIES), auke_variable)
+    current_hourly = current.groupby("time.hour").mean()
+    auke_hourly = auke_variable.groupby("time.hour").mean()
+    ax.plot(current_hourly["hour"].values, current_hourly.values, marker="o", label="current fp_dot_flux")
+    ax.plot(auke_hourly["hour"].values, auke_hourly.values, marker="o", label=f"Auke/WUR {variable}")
+    ax.set_title(f"{AUKE_SITE} {AUKE_SCENARIO} {COMPARE_SPECIES.upper()}: mean hour-of-day")
+    ax.set_xlabel("hour UTC")
+    ax.set_ylabel(current.attrs.get("units", bsd.attrs.get("units", "1")))
+    ax.set_xticks(np.arange(0, 24, 3))
+    ax.legend(fontsize=8)
+
+fig.tight_layout()
+plt.show()
+#+end_src
+
+#+RESULTS:
