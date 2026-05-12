@@ -1646,3 +1646,132 @@ CatalogRecord(catalog='games-catalog',
                                'storage_relative_path': 'data/verification_games_flux/UOB/v2/scenario_zarr/PARIS_ATEN_co2_fluxes_v2.zarr',
                                'target_kind': 'directory'})
 #+end_example
+
+* Baseline
+
+We need footprints and boundary conditions data to create the baselines.
+
+#+begin_src jupyter-python
+print(games_cat.describe())
+#+end_src
+
+#+RESULTS:
+: {'catalog_name': 'games-catalog', 'root_path': '/group/chem/acrg/verification_games_round_2/games_catalog', 'backend': 'tinydb', 'database_path': '/group/chem/acrg/verification_games_round_2/games_catalog/db.json', 'files_root': '/group/chem/acrg/verification_games_round_2/games_catalog/data', 'default_operation': 'copy', 'directory_template': '{year_added}/{original_stem}', 'filename_template': '{title_slug|original_stem}{original_suffix}', 'field_resolution_order': ['top_level', 'user_metadata', 'derived_metadata'], 'record_count': 125, 'has_metadata_fields': True, 'record_schemas': ['3d_conc_field', 'boundary_conditions', 'default', 'derived_flux', 'raw_flux', 'verification_games_flux', 'verification_games_obs']}
+
+#+begin_src jupyter-python
+bc_res = games_cat.search(where={"record_type": "boundary_conditions"}, regex={"species": "^(o2|co2)$"}, as_record_set=True)
+print(len(bc_res))
+#+end_src
+
+#+RESULTS:
+: 2
+
+
+#+begin_src jupyter-python
+print(bc_res.to_dataframe(["id", "species", "year", "title"]))
+#+end_src
+
+#+RESULTS:
+:    id species           year                                              title
+: 0  72     co2  202012-202112  CORSO v2025 NAME EUROPE CO2 boundary condition...
+: 1  73      o2  202012-202112  CORSO v2025 NAME EUROPE O2 boundary conditions...
+
+#+begin_src jupyter-python
+pprint(games_cat.get("72"))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+CatalogRecord(catalog='games-catalog',
+              time_added='2026-05-07T13:58:31Z',
+              id='72',
+              record_type='boundary_conditions',
+              locator=ArtifactLocator(kind='path',
+                                      value='/group/chem/acrg/verification_games_round_2/games_catalog/data/boundary_conditions/EUROPE/co2/CORSO_v2025/co2_EUROPE_CORSO_v2025_202012-202112.nc',
+                                      relative_path='data/boundary_conditions/EUROPE/co2/CORSO_v2025/co2_EUROPE_CORSO_v2025_202012-202112.nc'),
+              stored_abspath='/group/chem/acrg/verification_games_round_2/games_catalog/data/boundary_conditions/EUROPE/co2/CORSO_v2025/co2_EUROPE_CORSO_v2025_202012-202112.nc',
+              stored_relpath='data/boundary_conditions/EUROPE/co2/CORSO_v2025/co2_EUROPE_CORSO_v2025_202012-202112.nc',
+              storage_mode='write',
+              original_path=None,
+              original_filename=None,
+              suffixes=[],
+              user_metadata={'author': 'Joram Hooghiem',
+                             'bc_input': 'CORSO_v2025',
+                             'domain': 'EUROPE',
+                             'email': 'joram.hooghiem@wur.nl',
+                             'format': 'netcdf',
+                             'inputs': ['59',
+                                        '60',
+                                        '61',
+                                        '62',
+                                        '63',
+                                        '64',
+                                        '65',
+                                        '66',
+                                        '67',
+                                        '68',
+                                        '69',
+                                        '70',
+                                        '71'],
+                             'institution': 'Wageningen University & Research',
+                             'keywords': ['boundary_conditions',
+                                          'corso',
+                                          'name_europe',
+                                          'combined'],
+                             'modifications': 'Combined monthly CORSO v2025 '
+                                              'NAME EUROPE boundary-condition '
+                                              'NetCDF groups into one flat '
+                                              'species-specific NetCDF '
+                                              'dataset.',
+                             'product': 'CORSO',
+                             'provenance': 'derived',
+                             'source_record_id': '59',
+                             'species': 'co2',
+                             'title': 'CORSO v2025 NAME EUROPE CO2 boundary '
+                                      'conditions 202012-202112',
+                             'version': 'v2025',
+                             'year': '202012-202112'},
+              derived_metadata={'domain': 'EUROPE',
+                                'dtype': 'float32',
+                                'input_record_ids': ['59',
+                                                     '60',
+                                                     '61',
+                                                     '62',
+                                                     '63',
+                                                     '64',
+                                                     '65',
+                                                     '66',
+                                                     '67',
+                                                     '68',
+                                                     '69',
+                                                     '70',
+                                                     '71'],
+                                'output_variables': ['vmr_n',
+                                                     'vmr_e',
+                                                     'vmr_s',
+                                                     'vmr_w'],
+                                'reader_hint': 'xarray.open_dataset',
+                                'sizes': {'lat': 293,
+                                          'level': 20,
+                                          'lon': 391,
+                                          'time': 3167},
+                                'source_group': 'co2',
+                                'source_paths': ['/group/chem/acrg/verification_games_round_2/joram_bc_raw/output_2020-12.nc',
+                                                 '/group/chem/acrg/verification_games_round_2/joram_bc_raw/output_2021-01.nc',
+                                                 '/group/chem/acrg/verification_games_round_2/joram_bc_raw/output_2021-02.nc',
+                                                 '/group/chem/acrg/verification_games_round_2/joram_bc_raw/output_2021-03.nc',
+                                                 '/group/chem/acrg/verification_games_round_2/joram_bc_raw/output_2021-04.nc',
+                                                 '/group/chem/acrg/verification_games_round_2/joram_bc_raw/output_2021-05.nc',
+                                                 '/group/chem/acrg/verification_games_round_2/joram_bc_raw/output_2021-06.nc',
+                                                 '/group/chem/acrg/verification_games_round_2/joram_bc_raw/output_2021-07.nc',
+                                                 '/group/chem/acrg/verification_games_round_2/joram_bc_raw/output_2021-08.nc',
+                                                 '/group/chem/acrg/verification_games_round_2/joram_bc_raw/output_2021-09.nc',
+                                                 '/group/chem/acrg/verification_games_round_2/joram_bc_raw/output_2021-10.nc',
+                                                 '/group/chem/acrg/verification_games_round_2/joram_bc_raw/output_2021-11.nc',
+                                                 '/group/chem/acrg/verification_games_round_2/joram_bc_raw/output_2021-12.nc'],
+                                'species': 'co2',
+                                'units': 'micromol mol-1'},
+              naming_metadata={'resolved_directory': 'boundary_conditions/EUROPE/co2/CORSO_v2025',
+                               'resolved_filename': 'co2_EUROPE_CORSO_v2025_202012-202112.nc',
+                               'storage_relative_path': 'boundary_conditions/EUROPE/co2/CORSO_v2025/co2_EUROPE_CORSO_v2025_202012-202112.nc'})
+#+end_example
