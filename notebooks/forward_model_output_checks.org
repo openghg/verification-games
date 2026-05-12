@@ -1016,3 +1016,125 @@ plt.show()
 
 #+RESULTS:
 [[file:./.ob-jupyter/d43839c1d3be3d2aca5f5e4369deb69a5e546841.png]]
+
+*** Base sector comparison with current outputs
+:PROPERTIES:
+:CUSTOM_ID: base-sector-comparison-with-current-outputs
+:END:
+These plots compare the sector variables in Auke's data against the
+matching =fp_dot_flux= sector contribution. The comparison aligns the
+current hourly output to Auke's sampled timestamps before daily or
+hour-of-day aggregation.
+
+#+begin_src jupyter-python
+AUKE_SECTOR_VARIABLES = ("GPP", "TER", "FF", "ocean")
+
+
+def auke_series(species, variable):
+    if species not in auke_base or variable not in auke_base[species]:
+        return None
+    return auke_base[species][variable].reset_coords(drop=True)
+
+
+def our_base_sector(species, sector):
+    selected = select_sources(
+        bsd,
+        species=species,
+        scenarios=AUKE_SCENARIO,
+        sectors=sector,
+    )
+    if selected.sizes.get("source", 0) == 0:
+        return None
+    return selected.sum("source")
+
+
+def compare_sector_at_auke_times(species, sector):
+    current = our_base_sector(species, sector)
+    auke = auke_series(species, sector)
+    if current is None or auke is None:
+        return None
+
+    current = scale_current_to_auke_units(current, auke)
+    current_at_auke_times, auke_at_times = xr.align(current, auke, join="inner")
+    return xr.Dataset(
+        {
+            "current": current_at_auke_times,
+            "auke": auke_at_times,
+        }
+    ).assign_attrs({"units": auke.attrs.get("units", current.attrs.get("units", ""))})
+
+
+for species, ds in auke_base.items():
+    print(species.upper(), "sector variables:", [sector for sector in AUKE_SECTOR_VARIABLES if sector in ds])
+#+end_src
+
+#+RESULTS:
+
+#+begin_src jupyter-python
+SECTOR_COMPARE_SPECIES = "co2"
+available = [
+    sector
+    for sector in AUKE_SECTOR_VARIABLES
+    if compare_sector_at_auke_times(SECTOR_COMPARE_SPECIES, sector) is not None
+]
+
+fig, axes = plt.subplots(len(available), 1, sharex=True, figsize=(13, 2.8 * len(available)))
+axes = np.atleast_1d(axes)
+
+for ax, sector in zip(axes, available, strict=True):
+    comp = compare_sector_at_auke_times(SECTOR_COMPARE_SPECIES, sector)
+    current_daily = comp["current"].resample(time="1D").mean()
+    auke_daily = comp["auke"].resample(time="1D").mean()
+    ax.plot(pd.DatetimeIndex(current_daily["time"].values), current_daily.values, label="current sector at Auke times", linewidth=1.4)
+    ax.plot(pd.DatetimeIndex(auke_daily["time"].values), auke_daily.values, label="Auke/WUR sector", linewidth=1.4)
+    ax.set_title(f"{AUKE_SITE} {AUKE_SCENARIO} {SECTOR_COMPARE_SPECIES.upper()} {sector}: daily mean sector comparison")
+    ax.set_ylabel(comp.attrs.get("units", bsd.attrs.get("units", "1")))
+    ax.legend(fontsize=8)
+
+axes[-1].set_xlabel("time")
+fig.tight_layout()
+plt.show()
+#+end_src
+
+#+RESULTS:
+
+#+begin_src jupyter-python
+SECTOR_COMPARE_SPECIES = "co2"
+available = [
+    sector
+    for sector in AUKE_SECTOR_VARIABLES
+    if compare_sector_at_auke_times(SECTOR_COMPARE_SPECIES, sector) is not None
+]
+
+ncols = 2
+nrows = int(np.ceil(len(available) / ncols))
+fig, axes = plt.subplots(nrows, ncols, figsize=(13, 3.8 * nrows), sharex=True)
+axes = np.atleast_1d(axes).ravel()
+
+for ax, sector in zip(axes, available, strict=False):
+    comp = compare_sector_at_auke_times(SECTOR_COMPARE_SPECIES, sector)
+    current_full = scale_current_to_auke_units(
+        our_base_sector(SECTOR_COMPARE_SPECIES, sector),
+        auke_series(SECTOR_COMPARE_SPECIES, sector),
+    )
+    current_full_hourly = current_full.groupby("time.hour").mean()
+    current_sampled_hourly = comp["current"].groupby("time.hour").mean()
+    auke_hourly = comp["auke"].groupby("time.hour").mean()
+
+    ax.plot(current_full_hourly["hour"].values, current_full_hourly.values, color="0.7", linestyle="--", label="current all hours")
+    ax.plot(current_sampled_hourly["hour"].values, current_sampled_hourly.values, marker="o", label="current at Auke times")
+    ax.plot(auke_hourly["hour"].values, auke_hourly.values, marker="o", label="Auke/WUR sector")
+    ax.set_title(f"{AUKE_SITE} {AUKE_SCENARIO} {SECTOR_COMPARE_SPECIES.upper()} {sector}: mean hour-of-day")
+    ax.set_xlabel("hour UTC")
+    ax.set_ylabel(comp.attrs.get("units", bsd.attrs.get("units", "1")))
+    ax.set_xticks(np.arange(0, 24, 3))
+    ax.legend(fontsize=8)
+
+for ax in axes[len(available):]:
+    ax.set_visible(False)
+
+fig.tight_layout()
+plt.show()
+#+end_src
+
+#+RESULTS:
