@@ -861,4 +861,8 @@ print(failed_df)
 369  Traceback (most recent call last):\n  File "/g...
 #+end_example
 
+** TODO Re-run failed jobs
+
+...or investigate missing footprints
+
 * Save results to =ogcat=
