@@ -1069,6 +1069,8 @@ for species, ds in auke_base.items():
 #+end_src
 
 #+RESULTS:
+: CO2 sector variables: ['GPP', 'TER', 'FF', 'ocean']
+: O2 sector variables: ['GPP', 'TER', 'FF', 'ocean']
 
 #+begin_src jupyter-python
 SECTOR_COMPARE_SPECIES = "co2"
@@ -1097,6 +1099,7 @@ plt.show()
 #+end_src
 
 #+RESULTS:
+[[file:./.ob-jupyter/b9c76602ea2427b946c7dd39792ac6a11e0a311c.png]]
 
 #+begin_src jupyter-python
 SECTOR_COMPARE_SPECIES = "co2"
@@ -1138,3 +1141,4 @@ plt.show()
 #+end_src
 
 #+RESULTS:
+[[file:./.ob-jupyter/6806a0f89dd96d0e23cd59cdd970bf7bf1663f80.png]]
